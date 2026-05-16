@@ -350,7 +350,8 @@ select.input-field option { background: var(--paper); color: var(--ink); }
       <span class="invite-url" id="detail-invite-code"></span>
       <button class="copy-btn" id="detail-copy-btn" onclick="copyInvite()">Copy</button>
     </div>
-    <div style="font-size:11px; color:var(--ink-3); font-family:'JetBrains Mono',monospace; margin-bottom:16px; letter-spacing:0.02em;">Friends open this page and enter the code to join</div>
+    <button class="btn btn-primary" id="detail-share-btn" onclick="shareInviteDetail()" style="margin-bottom:8px;">Share invite 📋</button>
+    <div style="font-size:11px; color:var(--ink-3); font-family:'JetBrains Mono',monospace; margin-bottom:16px; letter-spacing:0.02em;">Copies a ready-to-send message with the link + code</div>
     <button class="btn btn-primary" id="detail-checkin-btn" onclick="go('s-checkin')">Check in today</button>
   </div>
   <div class="bottom-nav">
@@ -451,8 +452,10 @@ select.input-field option { background: var(--paper); color: var(--ink); }
     <div class="invite-box" style="width:100%; justify-content:center; margin-bottom:12px;">
       <span class="invite-url" id="created-code" style="font-size:26px; letter-spacing:0.25em;"></span>
     </div>
-    <button class="copy-btn" id="created-copy-btn" onclick="copyCreatedCode()" style="margin-bottom:24px; padding:10px 24px; font-size:13px; background:var(--petrol-pale); border:1.5px solid var(--border-med); color:var(--petrol); border-radius:var(--r-xs);">Copy code</button>
-    <button class="btn btn-primary" style="width:100%;" onclick="openChallenge(state.createdChallengeId)">Go to challenge ›</button>
+    <button class="copy-btn" id="created-copy-btn" onclick="copyCreatedCode()" style="margin-bottom:12px; padding:10px 24px; font-size:13px; background:var(--petrol-pale); border:1.5px solid var(--border-med); color:var(--petrol); border-radius:var(--r-xs);">Copy code only</button>
+    <button class="btn btn-primary" id="created-share-btn" onclick="shareInviteCreated()" style="width:100%; margin-bottom:10px;">Share invite 📋</button>
+    <div style="font-size:11px; color:var(--ink-3); font-family:'JetBrains Mono',monospace; margin-bottom:16px;">Copies a ready-to-send message with the link + code</div>
+    <button class="btn btn-ghost" style="width:100%;" onclick="openChallenge(state.createdChallengeId)">Go to challenge ›</button>
   </div>
 </div>
 
@@ -753,6 +756,20 @@ window.copyCreatedCode = function() {
   navigator.clipboard.writeText(state.createdChallengeId).catch(()=>{});
   const btn=document.getElementById('created-copy-btn');
   btn.textContent='Copied!'; setTimeout(()=>btn.textContent='Copy code',2000);
+};
+
+function shareMsg(code) {
+  return `Hey! Join my Offeed challenge 📵\n\nWe're competing to use social media less — loser pays up 😄\n\n👉 Go to https://kata-boehm.github.io/Offeed/\nEnter code: ${code}`;
+}
+window.shareInviteDetail = function() {
+  navigator.clipboard.writeText(shareMsg(state.activeChallengeId)).catch(()=>{});
+  const btn=document.getElementById('detail-share-btn');
+  btn.textContent='Copied!'; setTimeout(()=>btn.textContent='Share invite 📋',2000);
+};
+window.shareInviteCreated = function() {
+  navigator.clipboard.writeText(shareMsg(state.createdChallengeId)).catch(()=>{});
+  const btn=document.getElementById('created-share-btn');
+  btn.textContent='Copied!'; setTimeout(()=>btn.textContent='Share invite 📋',2000);
 };
 
 // ── Track which challenges the user belongs to ─────────────────────
