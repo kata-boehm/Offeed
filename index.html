@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Offeed</title>
 <link rel="manifest" href="/Offeed/manifest.json">
 <link rel="apple-touch-icon" href="/Offeed/icon.svg">
@@ -240,7 +240,7 @@ select.input-field option { background: var(--paper); color: var(--ink); }
 .copy-btn:hover { background: rgba(255,255,255,0.24); color: #fff; }
 
 /* ── Bottom nav ── */
-.bottom-nav { display: flex; background: var(--petrol); flex-shrink: 0; position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 430px; z-index: 20; }
+.bottom-nav { display: flex; background: var(--petrol); flex-shrink: 0; position: fixed; bottom: 0; left: 0; right: 0; z-index: 20; padding-bottom: env(safe-area-inset-bottom); }
 .nav-btn { flex: 1; background: none; border: none; cursor: pointer; padding: 10px 0 14px; display: flex; flex-direction: column; align-items: center; gap: 3px; color: rgba(255,255,255,0.5); font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.06em; transition: color 0.15s; text-transform: uppercase; }
 .nav-btn svg { width: 20px; height: 20px; stroke-width: 1.5; }
 .nav-btn.active { color: #fff; }
