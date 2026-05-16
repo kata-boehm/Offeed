@@ -319,7 +319,8 @@ select.input-field option { background: var(--paper); color: var(--ink); }
       <div style="font-size:20px; font-weight:800; color:#fff; letter-spacing:-0.01em; line-height:1;">Offeed</div>
       <div style="font-size:12px; color:rgba(255,255,255,0.6); font-weight:600; margin-top:2px;">Hey, <span id="home-username">—</span> 👋</div>
     </div>
-    <div class="topbar-end">
+    <div class="topbar-end" style="display:flex; gap:8px;">
+      <button class="back-btn" onclick="go('s-profile')" title="Edit profile" style="font-size:14px;">✏️</button>
       <button class="btn btn-ghost" style="width:auto; padding:8px 14px; font-size:13px; background:rgba(255,255,255,0.15); border-color:rgba(255,255,255,0.2); color:#fff;" onclick="go('s-new')">+ New</button>
     </div>
   </div>
@@ -456,6 +457,24 @@ select.input-field option { background: var(--paper); color: var(--ink); }
     <button class="btn btn-primary" id="created-share-btn" onclick="shareInviteCreated()" style="width:100%; margin-bottom:10px;">Share invite 📋</button>
     <div style="font-size:11px; color:var(--ink-3); font-family:'JetBrains Mono',monospace; margin-bottom:16px;">Copies a ready-to-send message with the link + code</div>
     <button class="btn btn-ghost" style="width:100%;" onclick="openChallenge(state.createdChallengeId)">Go to challenge ›</button>
+  </div>
+</div>
+
+<!-- ══ Profile ══ -->
+<div class="screen" id="s-profile">
+  <div class="topbar">
+    <button class="back-btn" onclick="go('s-home')">&#8592;</button>
+    <div style="flex:1; min-width:0;">
+      <div style="font-size:10px; color:rgba(255,255,255,0.5); font-weight:700; letter-spacing:0.06em;">OFFEED</div>
+      <h1>Your profile</h1>
+    </div>
+  </div>
+  <div class="body">
+    <div class="input-label">Your name</div>
+    <input class="input-field" type="text" id="profile-name" placeholder="e.g. Kata" maxlength="20" onkeydown="if(event.key==='Enter')saveProfile()">
+    <div id="profile-error" class="error-msg"></div>
+    <button class="btn btn-primary" onclick="saveProfile()">Save changes</button>
+    <button class="btn btn-ghost" onclick="go('s-home')">Cancel</button>
   </div>
 </div>
 
@@ -756,6 +775,42 @@ window.copyCreatedCode = function() {
   navigator.clipboard.writeText(state.createdChallengeId).catch(()=>{});
   const btn=document.getElementById('created-copy-btn');
   btn.textContent='Copied!'; setTimeout(()=>btn.textContent='Copy code',2000);
+};
+
+// ── Profile ───────────────────────────────────────────────────────
+const _origGo = window.go;
+window.go = function(id) {
+  _origGo(id);
+  if (id === 's-profile') {
+    document.getElementById('profile-name').value = state.me?.name || '';
+    document.getElementById('profile-error').textContent = '';
+  }
+};
+
+window.saveProfile = async function() {
+  const newName = document.getElementById('profile-name').value.trim();
+  if (!newName) { document.getElementById('profile-error').textContent = 'Please enter a name.'; return; }
+  if (newName === state.me.name) { go('s-home'); return; }
+
+  const oldName = state.me.name;
+  const newInitials = initials(newName);
+
+  // migrate localStorage challenges list to new name key
+  const oldIds = LS.get('sl_my_challenges_' + oldName) || [];
+  LS.set('sl_my_challenges_' + newName, oldIds);
+
+  // update name in all Firestore challenges
+  for (const id of oldIds) {
+    const c = await fetchChallenge(id);
+    if (!c) continue;
+    const m = c.members.find(m => m.name === oldName);
+    if (m) { m.name = newName; m.initials = newInitials; await saveChallenge(c); }
+  }
+
+  state.me = { name: newName, initials: newInitials };
+  saveLocalState();
+  loadMyChallenges();
+  go('s-home');
 };
 
 function shareMsg(code) {
