@@ -247,7 +247,8 @@ select.input-field option { background: var(--paper); color: var(--ink); }
 .nav-btn:hover { color: rgba(255,255,255,0.75); }
 
 /* ── Empty state ── */
-.empty-state { text-align: center; padding: 48px 0; color: var(--ink-3); font-size: 14px; line-height: 1.8; font-weight: 500; }
+.empty-state { text-align: center; padding: 32px 0; }
+.empty-icon { font-size: 52px; margin-bottom: 14px; }
 .empty-icon { font-size: 32px; margin-bottom: 12px; }
 
 /* ── Challenge list ── */
@@ -696,7 +697,7 @@ async function loadMyChallenges() {
 
   const myIds = LS.get('sl_my_challenges_'+state.me?.name) || [];
   if (!myIds.length) {
-    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🏁</div>No challenges yet.<br>Create one or join with an invite code.</div>`;
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🏁</div><div style="font-size:20px;font-weight:800;color:var(--ink);margin-bottom:20px;">No challenges yet.</div><button class="btn btn-primary" onclick="go('s-new')" style="margin-bottom:10px;">Create a challenge</button><button class="btn btn-ghost" onclick="go('s-join')">Join with invite code</button></div>`;
     return;
   }
 
@@ -704,7 +705,7 @@ async function loadMyChallenges() {
   const valid = challenges.filter(Boolean);
 
   if (!valid.length) {
-    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🏁</div>No challenges yet.<br>Create one or join with an invite code.</div>`;
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🏁</div><div style="font-size:20px;font-weight:800;color:var(--ink);margin-bottom:20px;">No challenges yet.</div><button class="btn btn-primary" onclick="go('s-new')" style="margin-bottom:10px;">Create a challenge</button><button class="btn btn-ghost" onclick="go('s-join')">Join with invite code</button></div>`;
     return;
   }
 
