@@ -266,6 +266,12 @@ select.input-field option { background: var(--paper); color: var(--ink); }
 .toggle input:checked + .toggle-slider { background: var(--petrol); }
 .toggle input:checked + .toggle-slider::before { transform: translateX(20px); }
 
+/* ── Duration picker ── */
+.duration-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
+.dur-btn { background: var(--paper); border: 1.5px solid var(--border-med); border-radius: var(--r-sm); padding: 11px 6px; font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 700; color: var(--ink-2); cursor: pointer; transition: all 0.15s; }
+.dur-btn.active { background: var(--petrol); border-color: var(--petrol); color: #fff; }
+.dur-btn:hover:not(.active) { border-color: var(--petrol); color: var(--petrol); }
+
 /* ── Week bars ── */
 .week-bars { display: flex; align-items: flex-end; gap: 5px; height: 52px; margin: 4px 0 6px; }
 .week-bar { flex: 1; border-radius: 4px 4px 0 0; }
@@ -430,14 +436,29 @@ select.input-field option { background: var(--paper); color: var(--ink); }
   <div class="body">
     <div class="input-label">Challenge name</div>
     <input class="input-field" type="text" id="new-name" placeholder="e.g. No Scroll May" maxlength="30">
-    <div class="input-label">Daily goal (max minutes)</div>
-    <input class="input-field" type="number" id="new-goal" placeholder="60" min="1" max="600">
+    <div class="input-label">Daily goal (max screen time)</div>
+    <div style="display:flex; gap:12px; margin-bottom:16px;">
+      <div class="big-input-wrap" style="flex:1; margin-bottom:0; padding:14px 16px;">
+        <input class="big-input" type="number" id="new-goal-hours" min="0" max="24" placeholder="0" oninput="if(+this.value>24)this.value=24; if(+this.value<0)this.value=0;" style="font-size:36px; width:60px;">
+        <span class="big-unit">h</span>
+      </div>
+      <div class="big-input-wrap" style="flex:1; margin-bottom:0; padding:14px 16px;">
+        <input class="big-input" type="number" id="new-goal-mins" min="0" max="60" placeholder="0" oninput="if(+this.value>60)this.value=60; if(+this.value<0)this.value=0;" style="font-size:36px; width:60px;">
+        <span class="big-unit">min</span>
+      </div>
+    </div>
     <div class="input-label">Duration</div>
-    <select class="input-field" id="new-duration">
-      <option value="7">1 week</option>
-      <option value="14">2 weeks</option>
-      <option value="30">1 month</option>
-    </select>
+    <div class="duration-grid">
+      <button type="button" class="dur-btn" data-days="3" onclick="selectDuration(this)">3 days</button>
+      <button type="button" class="dur-btn" data-days="5" onclick="selectDuration(this)">5 days</button>
+      <button type="button" class="dur-btn active" data-days="7" onclick="selectDuration(this)">1 week</button>
+      <button type="button" class="dur-btn" data-days="14" onclick="selectDuration(this)">2 weeks</button>
+      <button type="button" class="dur-btn" data-days="21" onclick="selectDuration(this)">3 weeks</button>
+      <button type="button" class="dur-btn" data-days="30" onclick="selectDuration(this)">1 month</button>
+      <button type="button" class="dur-btn" data-days="60" onclick="selectDuration(this)">2 months</button>
+      <button type="button" class="dur-btn" data-days="90" onclick="selectDuration(this)">3 months</button>
+    </div>
+    <input type="hidden" id="new-duration" value="7">
     <div class="input-label">Stakes (loser pays)</div>
     <input class="input-field" type="text" id="new-stakes" placeholder="e.g. buys everyone a coffee" maxlength="60">
     <div id="new-error" class="error-msg"></div>
@@ -606,14 +627,22 @@ window.joinChallenge = async function() {
 };
 
 // ── Create ────────────────────────────────────────────────────────
+window.selectDuration = function(btn) {
+  document.querySelectorAll('.dur-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('new-duration').value = btn.dataset.days;
+};
+
 window.createChallenge = async function() {
   const name = document.getElementById('new-name').value.trim();
-  const goal = parseInt(document.getElementById('new-goal').value);
+  const goalHours = parseInt(document.getElementById('new-goal-hours').value) || 0;
+  const goalMins = parseInt(document.getElementById('new-goal-mins').value) || 0;
+  const goal = goalHours * 60 + goalMins;
   const duration = parseInt(document.getElementById('new-duration').value);
   const stakes = document.getElementById('new-stakes').value.trim();
   setErr('new-error','');
   if (!name) { setErr('new-error','Please enter a name.'); return; }
-  if (!goal||goal<1) { setErr('new-error','Please enter a valid goal.'); return; }
+  if (!goal||goal<1) { setErr('new-error','Please set a goal.'); return; }
   if (!stakes) { setErr('new-error','Add stakes — it makes it fun!'); return; }
 
   const btn = document.getElementById('create-btn');
@@ -909,6 +938,16 @@ window.go = function(id) {
   else if (id === 's-account') document.getElementById('nav-account').classList.add('active');
 
   // Account screen init
+  if (id === 's-new') {
+    document.querySelectorAll('.dur-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('.dur-btn[data-days="7"]').classList.add('active');
+    document.getElementById('new-duration').value = '7';
+    document.getElementById('new-goal-hours').value = '';
+    document.getElementById('new-goal-mins').value = '';
+    document.getElementById('new-name').value = '';
+    document.getElementById('new-stakes').value = '';
+    setErr('new-error','');
+  }
   if (id === 's-account') {
     document.getElementById('profile-name').value = state.me?.name || '';
     document.getElementById('profile-error').textContent = '';
