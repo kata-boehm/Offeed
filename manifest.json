@@ -1,0 +1,19 @@
+{
+  "name": "Offeed",
+  "short_name": "Offeed",
+  "description": "Challenge your friends to use social media less. Loser pays up.",
+  "start_url": "/Offeed/",
+  "scope": "/Offeed/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1e7a8c",
+  "theme_color": "#1e7a8c",
+  "icons": [
+    {
+      "src": "/Offeed/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
