@@ -555,7 +555,35 @@ function daysLeft(c) { return Math.max(0, Math.ceil((new Date(c.endDate)-new Dat
 function checkedInToday(member) { return !!(member.checkins&&member.checkins[getToday()]); }
 function checkedInForYesterday(member) { return !!(member.checkins&&member.checkins[getYesterday()]); }
 function rankSuffix(n) { return ['st','nd','rd'][n-1]||'th'; }
-function go(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+function go(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  // Nav visibility
+  const nav = document.getElementById('global-nav');
+  if (nav) {
+    nav.style.display = 'flex';
+    nav.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    if (['s-home','s-detail','s-checkin','s-submitted','s-created'].includes(id))
+      document.getElementById('nav-home').classList.add('active');
+    else if (id === 's-new') document.getElementById('nav-new').classList.add('active');
+    else if (id === 's-account') document.getElementById('nav-account').classList.add('active');
+  }
+  // Screen-specific init
+  if (id === 's-new') {
+    document.querySelectorAll('.dur-btn').forEach(b => b.classList.remove('active'));
+    const def = document.querySelector('.dur-btn[data-days="7"]');
+    if (def) def.classList.add('active');
+    const nd = document.getElementById('new-duration'); if (nd) nd.value = '7';
+    ['new-goal-hours','new-goal-mins','new-name','new-stakes'].forEach(i => { const el=document.getElementById(i); if(el) el.value=''; });
+    const ne = document.getElementById('new-error'); if (ne) ne.textContent = '';
+  }
+  if (id === 's-account') {
+    const pn = document.getElementById('profile-name'); if (pn) pn.value = window.state?.me?.name || '';
+    const pe = document.getElementById('profile-error'); if (pe) pe.textContent = '';
+    const nt = document.getElementById('notif-toggle'); if (nt) nt.checked = !!(localStorage.getItem('notif_enabled') && Notification.permission === 'granted');
+    const nm = document.getElementById('notif-msg'); if (nm) nm.textContent = '';
+  }
+}
 window.go = go;
 function showLoading(v) { document.getElementById('loading').style.display = v ? 'flex' : 'none'; }
 function setErr(id, msg) { document.getElementById(id).textContent = msg||''; }
@@ -582,11 +610,6 @@ showLoading(false);
 if (state.me) { await loadMyChallenges(); go('s-home'); }
 else { go('s-onboard'); }
 checkAndShowReminder();
-// go() wrapper isn't defined yet at this point, so manually init the nav
-if (state.me) {
-  document.getElementById('global-nav').style.display = 'flex';
-  document.getElementById('nav-home').classList.add('active');
-}
 
 
 // ── Onboarding ────────────────────────────────────────────────────
@@ -919,40 +942,6 @@ async function checkAndShowReminder() {
 }
 
 // ── Profile ───────────────────────────────────────────────────────
-const _origGo = window.go;
-window.go = function(id) {
-  _origGo(id);
-
-  // Show/hide global nav
-  const hiddenScreens = ['s-onboard', 's-join'];
-  const nav = document.getElementById('global-nav');
-  nav.style.display = hiddenScreens.includes(id) ? 'none' : 'flex';
-
-  // Active tab
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  if (['s-home', 's-detail', 's-checkin', 's-submitted', 's-created'].includes(id))
-    document.getElementById('nav-home').classList.add('active');
-  else if (id === 's-new') document.getElementById('nav-new').classList.add('active');
-  else if (id === 's-account') document.getElementById('nav-account').classList.add('active');
-
-  // Account screen init
-  if (id === 's-new') {
-    document.querySelectorAll('.dur-btn').forEach(b => b.classList.remove('active'));
-    document.querySelector('.dur-btn[data-days="7"]').classList.add('active');
-    document.getElementById('new-duration').value = '7';
-    document.getElementById('new-goal-hours').value = '';
-    document.getElementById('new-goal-mins').value = '';
-    document.getElementById('new-name').value = '';
-    document.getElementById('new-stakes').value = '';
-    setErr('new-error','');
-  }
-  if (id === 's-account') {
-    document.getElementById('profile-name').value = state.me?.name || '';
-    document.getElementById('profile-error').textContent = '';
-    document.getElementById('notif-toggle').checked = !!(LS.get('notif_enabled') && Notification.permission === 'granted');
-    document.getElementById('notif-msg').textContent = '';
-  }
-};
 
 window.saveProfile = async function() {
   const newName = document.getElementById('profile-name').value.trim();
