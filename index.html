@@ -696,7 +696,7 @@ async function loadMyChallenges() {
 
   const myIds = LS.get('sl_my_challenges_'+state.me?.name) || [];
   if (!myIds.length) {
-    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🏁</div><div style="font-size:20px;font-weight:800;color:var(--ink);margin-bottom:20px;">No challenges yet.</div><button class="btn btn-primary" onclick="go('s-new')" style="margin-bottom:10px;">Create a challenge</button><button class="btn btn-ghost" onclick="go('s-join')">Join with invite code</button></div>`;
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🏁</div><div style="font-size:20px;font-weight:800;color:var(--ink);margin-bottom:20px;">No challenges yet.</div><button class="btn btn-primary" onclick="go('s-new')" style="margin-bottom:10px;">Create a challenge</button><button class="btn btn-primary" onclick="go('s-join')">Join with invite code</button></div>`;
     return;
   }
 
@@ -704,7 +704,7 @@ async function loadMyChallenges() {
   const valid = challenges.filter(Boolean);
 
   if (!valid.length) {
-    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🏁</div><div style="font-size:20px;font-weight:800;color:var(--ink);margin-bottom:20px;">No challenges yet.</div><button class="btn btn-primary" onclick="go('s-new')" style="margin-bottom:10px;">Create a challenge</button><button class="btn btn-ghost" onclick="go('s-join')">Join with invite code</button></div>`;
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🏁</div><div style="font-size:20px;font-weight:800;color:var(--ink);margin-bottom:20px;">No challenges yet.</div><button class="btn btn-primary" onclick="go('s-new')" style="margin-bottom:10px;">Create a challenge</button><button class="btn btn-primary" onclick="go('s-join')">Join with invite code</button></div>`;
     return;
   }
 
