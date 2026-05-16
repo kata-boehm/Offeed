@@ -252,6 +252,14 @@ select.input-field option { background: var(--paper); color: var(--ink); }
 .challenge-list-item:last-child { border-bottom: none; }
 .challenge-list-item:hover { opacity: 0.65; }
 
+/* ── Toggle switch ── */
+.toggle { position: relative; display: inline-block; width: 46px; height: 26px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+.toggle-slider { position: absolute; inset: 0; background: var(--border-med); border-radius: 26px; cursor: pointer; transition: background 0.2s; }
+.toggle-slider::before { content: ''; position: absolute; width: 20px; height: 20px; left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: transform 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
+.toggle input:checked + .toggle-slider { background: var(--petrol); }
+.toggle input:checked + .toggle-slider::before { transform: translateX(20px); }
+
 /* ── Week bars ── */
 .week-bars { display: flex; align-items: flex-end; gap: 5px; height: 52px; margin: 4px 0 6px; }
 .week-bar { flex: 1; border-radius: 4px 4px 0 0; }
@@ -475,6 +483,19 @@ select.input-field option { background: var(--paper); color: var(--ink); }
     <div id="profile-error" class="error-msg"></div>
     <button class="btn btn-primary" onclick="saveProfile()">Save changes</button>
     <button class="btn btn-ghost" onclick="go('s-home')">Cancel</button>
+
+    <div class="section-label" style="margin-top:28px;">Notifications</div>
+    <div class="card" style="display:flex; align-items:center; gap:14px; margin-bottom:8px;">
+      <div style="flex:1;">
+        <div style="font-size:14px; font-weight:700; color:var(--ink);">Daily reminder</div>
+        <div style="font-size:12px; color:var(--ink-3); margin-top:2px; font-weight:500;">Nudges you to log your screen time</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="notif-toggle" onchange="toggleNotifications(this.checked)">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div id="notif-msg" style="font-size:12px; color:var(--ink-3); font-weight:500; min-height:18px; padding:0 2px;"></div>
   </div>
 </div>
 
@@ -534,6 +555,7 @@ loadLocalState();
 showLoading(false);
 if (state.me) { await loadMyChallenges(); go('s-home'); }
 else { go('s-onboard'); }
+checkAndShowReminder();
 
 // ── Onboarding ────────────────────────────────────────────────────
 window.onboardSubmit = function() {
@@ -777,6 +799,65 @@ window.copyCreatedCode = function() {
   btn.textContent='Copied!'; setTimeout(()=>btn.textContent='Copy code',2000);
 };
 
+// ── Notifications ─────────────────────────────────────────────────
+let swReg = null;
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/Offeed/sw.js').then(r => { swReg = r; }).catch(() => {});
+}
+
+window.toggleNotifications = async function(enabled) {
+  const msg = document.getElementById('notif-msg');
+  if (!enabled) {
+    LS.set('notif_enabled', false);
+    if (swReg && 'periodicSync' in swReg) {
+      try { await swReg.periodicSync.unregister('offeed-reminder'); } catch(e) {}
+    }
+    msg.textContent = 'Reminders turned off.';
+    return;
+  }
+
+  if (!('Notification' in window)) {
+    msg.textContent = 'Your browser doesn\'t support notifications.';
+    document.getElementById('notif-toggle').checked = false;
+    return;
+  }
+
+  const permission = await Notification.requestPermission();
+  if (permission !== 'granted') {
+    msg.textContent = 'Permission denied — enable notifications in your browser settings.';
+    document.getElementById('notif-toggle').checked = false;
+    return;
+  }
+
+  LS.set('notif_enabled', true);
+
+  if (swReg && 'periodicSync' in swReg) {
+    try {
+      await swReg.periodicSync.register('offeed-reminder', { minInterval: 24 * 60 * 60 * 1000 });
+      msg.textContent = '✓ Daily reminders enabled!';
+    } catch(e) {
+      msg.textContent = '✓ Enabled — you\'ll be reminded when you open the app.';
+    }
+  } else {
+    msg.textContent = '✓ Enabled — you\'ll be reminded when you open the app.';
+  }
+};
+
+async function checkAndShowReminder() {
+  if (!LS.get('notif_enabled')) return;
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  const today = getToday();
+  if (LS.get('last_reminder') === today) return;
+  const now = new Date();
+  if (now.getHours() < 9) return;
+  LS.set('last_reminder', today);
+  const reg = swReg || await navigator.serviceWorker?.ready;
+  if (reg) reg.showNotification('Offeed 📵', {
+    body: "Don't forget to log yesterday's screen time! Don't let your friends catch up 👀",
+    tag: 'offeed-reminder',
+  });
+}
+
 // ── Profile ───────────────────────────────────────────────────────
 const _origGo = window.go;
 window.go = function(id) {
@@ -784,6 +865,8 @@ window.go = function(id) {
   if (id === 's-profile') {
     document.getElementById('profile-name').value = state.me?.name || '';
     document.getElementById('profile-error').textContent = '';
+    document.getElementById('notif-toggle').checked = !!(LS.get('notif_enabled') && Notification.permission === 'granted');
+    document.getElementById('notif-msg').textContent = '';
   }
 };
 
