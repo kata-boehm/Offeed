@@ -563,6 +563,11 @@ showLoading(false);
 if (state.me) { await loadMyChallenges(); go('s-home'); }
 else { go('s-onboard'); }
 checkAndShowReminder();
+// go() wrapper isn't defined yet at this point, so manually init the nav
+if (state.me) {
+  document.getElementById('global-nav').style.display = 'flex';
+  document.getElementById('nav-home').classList.add('active');
+}
 
 
 // ── Onboarding ────────────────────────────────────────────────────
