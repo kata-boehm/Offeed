@@ -354,6 +354,7 @@ select.input-field option { background: var(--paper); color: var(--ink); }
     </div>
   </div>
   <div class="body">
+    <div id="detail-winner-banner"></div>
     <button class="btn btn-primary" id="detail-checkin-btn" onclick="go('s-checkin')" style="margin-bottom:20px;">Log yesterday's screen time</button>
     <div class="stat-grid" id="detail-stats"></div>
     <div id="detail-stakes"></div>
@@ -663,15 +664,16 @@ async function loadMyChallenges() {
     const rank = sorted.findIndex(m=>m.name===state.me.name)+1;
     const dl = daysLeft(c);
     const done = me&&checkedInForYesterday(me);
+    const over = getToday() > c.endDate;
     const pillCls = rank===1?'pill-gold':rank===c.members.length&&c.members.length>1?'pill-warn':'pill-muted';
     return `<div class="challenge-list-item" onclick="openChallenge('${c.id}')">
       <div style="flex:1;min-width:0;">
         <div style="font-size:15px;font-weight:700;color:var(--text-1);margin-bottom:3px;">${c.name}</div>
-        <div style="font-size:11px;color:var(--text-3);font-family:'JetBrains Mono',monospace;">${c.members.length} people · ${dl} days left</div>
+        <div style="font-size:11px;color:var(--text-3);font-family:'JetBrains Mono',monospace;">${c.members.length} people · ${over ? '🏁 ended' : dl + ' days left'}</div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;">
-        <span class="pill ${pillCls}">${rank}${rankSuffix(rank)}</span>
-        <span style="font-size:10px;color:${done?'var(--accent)':'var(--text-3)'};font-family:'JetBrains Mono',monospace;">${done?'✓ logged':'· log yesterday'}</span>
+        <span class="pill ${over ? 'pill-muted' : pillCls}">${over ? '🏆 '+sorted[0].name : rank+rankSuffix(rank)}</span>
+        ${over ? '' : `<span style="font-size:10px;color:${done?'var(--accent)':'var(--text-3)'};font-family:'JetBrains Mono',monospace;">${done?'✓ logged':'· log yesterday'}</span>`}
       </div>
     </div>`;
   }).join('');
@@ -698,7 +700,18 @@ function renderDetail(c) {
   const avg = checkins>0 ? Math.round(totalMinutes(me)/checkins) : 0;
   const dl = daysLeft(c);
 
+  const isOver = getToday() > c.endDate;
+  const winner = sorted[0];
+
   document.getElementById('detail-title').textContent = c.name;
+  document.getElementById('detail-winner-banner').innerHTML = isOver ? `
+    <div style="background:var(--amber-dim); border:2px solid rgba(240,168,48,0.25); border-radius:var(--r); padding:22px 18px; text-align:center; margin-bottom:20px;">
+      <div style="font-size:42px; margin-bottom:10px;">🏆</div>
+      <div style="font-size:21px; font-weight:800; color:var(--ink); margin-bottom:4px;">${winner.name} wins!</div>
+      <div style="font-size:13px; color:var(--ink-2); font-weight:500; margin-bottom:2px;">${totalMinutes(winner)} min total — least screen time</div>
+      <div style="font-size:12px; color:var(--ink-3); font-weight:600; margin-top:8px; text-transform:uppercase; letter-spacing:0.06em;">Challenge complete</div>
+    </div>` : '';
+
   document.getElementById('detail-stats').innerHTML = `
     <div class="stat-card"><div class="stat-label">participants</div><div class="stat-val">${c.members.length}</div></div>
     <div class="stat-card"><div class="stat-label">days left</div><div class="stat-val">${dl}</div></div>
@@ -731,8 +744,13 @@ function renderDetail(c) {
 
   const btn = document.getElementById('detail-checkin-btn');
   const done = me && checkedInForYesterday(me);
-  btn.textContent = done ? '✓ Yesterday already logged' : 'Log yesterday\'s screen time';
-  btn.disabled = !!done;
+  if (isOver) {
+    btn.textContent = 'Challenge over';
+    btn.disabled = true;
+  } else {
+    btn.textContent = done ? '✓ Yesterday already logged' : 'Log yesterday\'s screen time';
+    btn.disabled = !!done;
+  }
 }
 
 // ── Check-in ──────────────────────────────────────────────────────
