@@ -240,7 +240,7 @@ select.input-field option { background: var(--paper); color: var(--ink); }
 .copy-btn:hover { background: rgba(255,255,255,0.24); color: #fff; }
 
 /* ── Bottom nav ── */
-.bottom-nav { display: flex; background: var(--petrol); flex-shrink: 0; }
+.bottom-nav { display: flex; background: var(--petrol); flex-shrink: 0; position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 430px; z-index: 20; }
 .nav-btn { flex: 1; background: none; border: none; cursor: pointer; padding: 10px 0 14px; display: flex; flex-direction: column; align-items: center; gap: 3px; color: rgba(255,255,255,0.5); font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.06em; transition: color 0.15s; text-transform: uppercase; }
 .nav-btn svg { width: 20px; height: 20px; stroke-width: 1.5; }
 .nav-btn.active { color: #fff; }
