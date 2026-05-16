@@ -361,6 +361,7 @@ select.input-field option { background: var(--paper); color: var(--ink); }
   </div>
   <div class="body">
     <div id="detail-winner-banner"></div>
+    <div id="detail-baseline-banner"></div>
     <button class="btn btn-primary" id="detail-checkin-btn" onclick="go('s-checkin')" style="margin-bottom:20px;">Log yesterday's screen time</button>
     <div class="stat-grid" id="detail-stats"></div>
     <div id="detail-stakes"></div>
@@ -436,15 +437,29 @@ select.input-field option { background: var(--paper); color: var(--ink); }
   <div class="body">
     <div class="input-label">Challenge name</div>
     <input class="input-field" type="text" id="new-name" placeholder="e.g. No Scroll May" maxlength="30">
-    <div class="input-label">Daily goal (max screen time)</div>
-    <div style="display:flex; gap:12px; margin-bottom:16px;">
-      <div class="big-input-wrap" style="flex:1; margin-bottom:0; padding:14px 16px;">
-        <input class="big-input" type="number" id="new-goal-hours" min="0" max="24" placeholder="0" oninput="if(+this.value>24)this.value=24; if(+this.value<0)this.value=0;" style="font-size:36px; width:60px;">
-        <span class="big-unit">h</span>
-      </div>
-      <div class="big-input-wrap" style="flex:1; margin-bottom:0; padding:14px 16px;">
-        <input class="big-input" type="number" id="new-goal-mins" min="0" max="60" placeholder="0" oninput="if(+this.value>60)this.value=60; if(+this.value<0)this.value=0;" style="font-size:36px; width:60px;">
-        <span class="big-unit">min</span>
+    <div class="input-label">Challenge type</div>
+    <div style="display:flex; gap:10px; margin-bottom:16px;">
+      <button type="button" class="dur-btn active" id="type-btn-shared" onclick="selectType('shared')" style="flex:1; padding:14px 10px; text-align:left; line-height:1.4;">
+        <div>Shared limit</div>
+        <div style="font-size:11px; font-weight:500; opacity:0.65; margin-top:3px;">Same daily max for everyone</div>
+      </button>
+      <button type="button" class="dur-btn" id="type-btn-personal" onclick="selectType('personal')" style="flex:1; padding:14px 10px; text-align:left; line-height:1.4;">
+        <div>Beat yourself</div>
+        <div style="font-size:11px; font-weight:500; opacity:0.65; margin-top:3px;">Biggest % drop wins</div>
+      </button>
+    </div>
+    <input type="hidden" id="new-type" value="shared">
+    <div id="goal-section">
+      <div class="input-label">Daily limit (max screen time)</div>
+      <div style="display:flex; gap:12px; margin-bottom:16px;">
+        <div class="big-input-wrap" style="flex:1; margin-bottom:0; padding:14px 16px;">
+          <input class="big-input" type="number" id="new-goal-hours" min="0" max="24" placeholder="0" oninput="if(+this.value>24)this.value=24; if(+this.value<0)this.value=0;" style="font-size:36px; width:60px;">
+          <span class="big-unit">h</span>
+        </div>
+        <div class="big-input-wrap" style="flex:1; margin-bottom:0; padding:14px 16px;">
+          <input class="big-input" type="number" id="new-goal-mins" min="0" max="60" placeholder="0" oninput="if(+this.value>60)this.value=60; if(+this.value<0)this.value=0;" style="font-size:36px; width:60px;">
+          <span class="big-unit">min</span>
+        </div>
       </div>
     </div>
     <div class="input-label">Duration</div>
@@ -576,6 +591,9 @@ function go(id) {
     const nd = document.getElementById('new-duration'); if (nd) nd.value = '7';
     ['new-goal-hours','new-goal-mins','new-name','new-stakes'].forEach(i => { const el=document.getElementById(i); if(el) el.value=''; });
     const ne = document.getElementById('new-error'); if (ne) ne.textContent = '';
+    const nt = document.getElementById('new-type'); if (nt) nt.value = 'shared';
+    const gs = document.getElementById('goal-section'); if (gs) gs.style.display = 'block';
+    ['type-btn-shared','type-btn-personal'].forEach(i => { const el=document.getElementById(i); if(el) el.classList.toggle('active', i==='type-btn-shared'); });
   }
   if (id === 's-account') {
     const pn = document.getElementById('profile-name'); if (pn) pn.value = window.state?.me?.name || '';
@@ -656,8 +674,37 @@ window.selectDuration = function(btn) {
   document.getElementById('new-duration').value = btn.dataset.days;
 };
 
+window.selectType = function(type) {
+  document.getElementById('type-btn-shared').classList.toggle('active', type === 'shared');
+  document.getElementById('type-btn-personal').classList.toggle('active', type === 'personal');
+  document.getElementById('new-type').value = type;
+  document.getElementById('goal-section').style.display = type === 'shared' ? 'block' : 'none';
+};
+
+function reductionPct(member) {
+  const baseline = member.baselineMinutes;
+  if (!baseline) return null;
+  const count = Object.keys(member.checkins || {}).length;
+  if (!count) return null;
+  const avg = totalMinutes(member) / count;
+  return Math.max(0, Math.round((1 - avg / baseline) * 100));
+}
+
+window.saveBaseline = async function() {
+  const c = state.challengeCache;
+  const h = parseInt(document.getElementById('baseline-hours').value) || 0;
+  const m = parseInt(document.getElementById('baseline-mins').value) || 0;
+  const baseline = h * 60 + m;
+  if (!baseline) { document.getElementById('baseline-error').textContent = 'Please enter your daily average.'; return; }
+  const idx = c.members.findIndex(m => m.name === state.me.name);
+  c.members[idx].baselineMinutes = baseline;
+  await saveChallenge(c);
+  renderDetail(c);
+};
+
 window.createChallenge = async function() {
   const name = document.getElementById('new-name').value.trim();
+  const type = document.getElementById('new-type').value;
   const goalHours = parseInt(document.getElementById('new-goal-hours').value) || 0;
   const goalMins = parseInt(document.getElementById('new-goal-mins').value) || 0;
   const goal = goalHours * 60 + goalMins;
@@ -665,7 +712,7 @@ window.createChallenge = async function() {
   const stakes = document.getElementById('new-stakes').value.trim();
   setErr('new-error','');
   if (!name) { setErr('new-error','Please enter a name.'); return; }
-  if (!goal||goal<1) { setErr('new-error','Please set a goal.'); return; }
+  if (type === 'shared' && (!goal||goal<1)) { setErr('new-error','Please set a daily limit.'); return; }
   if (!stakes) { setErr('new-error','Add stakes — it makes it fun!'); return; }
 
   const btn = document.getElementById('create-btn');
@@ -674,7 +721,7 @@ window.createChallenge = async function() {
   const id = makeId();
   const end = new Date(); end.setDate(end.getDate()+duration);
   const c = {
-    id, name, goalMinutes: goal, durationDays: duration, stakes,
+    id, name, type, goalMinutes: type === 'shared' ? goal : null, durationDays: duration, stakes,
     startDate: getToday(), endDate: end.toISOString().slice(0,10),
     members: [{ name: state.me.name, initials: state.me.initials, checkins: {} }]
   };
@@ -743,53 +790,111 @@ window.openChallenge = async function(id) {
 // ── Detail ────────────────────────────────────────────────────────
 function renderDetail(c) {
   state.challengeCache = c;
+  const isPersonal = c.type === 'personal';
   const me = c.members.find(m=>m.name===state.me.name);
-  const sorted = [...c.members].sort((a,b)=>totalMinutes(a)-totalMinutes(b));
-  const myRank = sorted.findIndex(m=>m.name===state.me.name)+1;
-  const checkins = Object.keys(me?.checkins||{}).length;
-  const avg = checkins>0 ? Math.round(totalMinutes(me)/checkins) : 0;
   const dl = daysLeft(c);
-
   const isOver = getToday() > c.endDate;
-  const winner = sorted[0];
+  const checkins = Object.keys(me?.checkins||{}).length;
+
+  // Sort and rank differently per type
+  let sorted, myRank, winner;
+  if (isPersonal) {
+    sorted = [...c.members].sort((a,b) => {
+      const pa = reductionPct(a), pb = reductionPct(b);
+      if (pa === null && pb === null) return 0;
+      if (pa === null) return 1;
+      if (pb === null) return -1;
+      return pb - pa;
+    });
+  } else {
+    sorted = [...c.members].sort((a,b)=>totalMinutes(a)-totalMinutes(b));
+  }
+  myRank = sorted.findIndex(m=>m.name===state.me.name)+1;
+  winner = sorted[0];
 
   document.getElementById('detail-title').textContent = c.name;
+
+  // Winner banner
   document.getElementById('detail-winner-banner').innerHTML = isOver ? `
     <div style="background:var(--amber-dim); border:2px solid rgba(240,168,48,0.25); border-radius:var(--r); padding:22px 18px; text-align:center; margin-bottom:20px;">
       <div style="font-size:42px; margin-bottom:10px;">🏆</div>
       <div style="font-size:21px; font-weight:800; color:var(--ink); margin-bottom:4px;">${winner.name} wins!</div>
-      <div style="font-size:13px; color:var(--ink-2); font-weight:500; margin-bottom:2px;">${totalMinutes(winner)} min total — least screen time</div>
+      <div style="font-size:13px; color:var(--ink-2); font-weight:500; margin-bottom:2px;">${isPersonal ? (reductionPct(winner)??0)+'% reduction' : totalMinutes(winner)+' min total — least screen time'}</div>
       <div style="font-size:12px; color:var(--ink-3); font-weight:600; margin-top:8px; text-transform:uppercase; letter-spacing:0.06em;">Challenge complete</div>
     </div>` : '';
 
+  // Baseline banner for personal challenges
+  const needsBaseline = isPersonal && !me?.baselineMinutes;
+  document.getElementById('detail-baseline-banner').innerHTML = needsBaseline ? `
+    <div style="background:var(--petrol-pale); border:1.5px solid var(--border-med); border-radius:var(--r); padding:18px; margin-bottom:20px;">
+      <div style="font-size:16px; font-weight:800; color:var(--ink); margin-bottom:4px;">Set your starting point</div>
+      <div style="font-size:13px; color:var(--ink-2); margin-bottom:14px; font-weight:500;">What's your current daily average on social media?</div>
+      <div style="display:flex; gap:10px; margin-bottom:10px;">
+        <div class="big-input-wrap" style="flex:1; margin-bottom:0; padding:12px 14px;">
+          <input class="big-input" type="number" id="baseline-hours" min="0" max="24" placeholder="0" oninput="if(+this.value>24)this.value=24;" style="font-size:36px; width:60px;">
+          <span class="big-unit">h</span>
+        </div>
+        <div class="big-input-wrap" style="flex:1; margin-bottom:0; padding:12px 14px;">
+          <input class="big-input" type="number" id="baseline-mins" min="0" max="60" placeholder="0" oninput="if(+this.value>60)this.value=60;" style="font-size:36px; width:60px;">
+          <span class="big-unit">min</span>
+        </div>
+      </div>
+      <div id="baseline-error" style="font-size:12px; color:var(--red); font-weight:600; min-height:16px; margin-bottom:8px;"></div>
+      <button class="btn btn-primary" onclick="saveBaseline()">Save my starting point</button>
+    </div>` : '';
+
+  // Stats
+  const avg = checkins>0 ? Math.round(totalMinutes(me)/checkins) : 0;
+  const myPct = isPersonal ? reductionPct(me) : null;
   document.getElementById('detail-stats').innerHTML = `
     <div class="stat-card"><div class="stat-label">participants</div><div class="stat-val">${c.members.length}</div></div>
     <div class="stat-card"><div class="stat-label">days left</div><div class="stat-val">${dl}</div></div>
-    <div class="stat-card"><div class="stat-label">your avg</div><div class="stat-val" style="color:var(--accent);">${avg}m</div></div>
+    ${isPersonal
+      ? `<div class="stat-card"><div class="stat-label">your reduction</div><div class="stat-val" style="color:var(--accent);">${myPct !== null ? myPct+'%' : '—'}</div></div>`
+      : `<div class="stat-card"><div class="stat-label">your avg</div><div class="stat-val" style="color:var(--accent);">${avg}m</div></div>`}
     <div class="stat-card"><div class="stat-label">your rank</div><div class="stat-val">${myRank}${rankSuffix(myRank)}</div></div>`;
+
   document.getElementById('detail-stakes').innerHTML = c.stakes ?
     `<div class="stakes-banner"><span style="font-size:18px;">☕</span><span>${c.stakes}</span></div>` : '';
 
   const avCls=['av-gold','av-accent','av-muted','av-warn'];
   const barCol=['#f0a830','#2aaa72','#8ab4bc','#e05c5c'];
   const scCol=['var(--gold)','var(--text-2)','var(--text-3)','var(--warn)'];
-  const maxT=Math.max(...sorted.map(m=>totalMinutes(m)),1);
 
   document.getElementById('detail-lb').innerHTML = sorted.map((m,i) => {
     const isMe = m.name===state.me.name;
-    const t = totalMinutes(m);
     const idx = Math.min(i,3);
     const rankColor = i===0?'var(--gold)':i===sorted.length-1&&sorted.length>1?'var(--warn)':'var(--text-3)';
-    return `<div class="lb-row">
-      <div style="font-family:'JetBrains Mono',monospace; font-size:12px; color:${rankColor}; width:28px; flex-shrink:0; text-align:center; font-weight:600;">#${i+1}</div>
-      <div class="lb-avatar ${avCls[idx]}">${m.initials}</div>
-      <div class="lb-info">
-        <div class="lb-name">${m.name}${isMe?' <span style="font-size:11px;color:var(--text-3);font-weight:500;">(you)</span>':''}</div>
-        <div class="lb-bar"><div class="lb-bar-fill" style="width:${Math.round(t/maxT*100)}%;background:${barCol[idx]}"></div></div>
-        <div class="lb-sub">${t}m total · ${checkedInForYesterday(m)?'✓ logged':'not logged yet'}</div>
-      </div>
-      <div class="lb-score" style="color:${scCol[idx]}">${t}m</div>
-    </div>`;
+    if (isPersonal) {
+      const pct = reductionPct(m);
+      const maxPct = Math.max(...sorted.map(x=>reductionPct(x)||0), 1);
+      const barW = pct !== null ? Math.round(pct/maxPct*100) : 0;
+      const sub = pct !== null ? `${pct}% reduction` : (m.baselineMinutes ? 'no check-ins yet' : 'starting point not set');
+      const score = pct !== null ? `${pct}%` : '—';
+      return `<div class="lb-row">
+        <div style="font-family:'JetBrains Mono',monospace; font-size:12px; color:${rankColor}; width:28px; flex-shrink:0; text-align:center; font-weight:600;">#${i+1}</div>
+        <div class="lb-avatar ${avCls[idx]}">${m.initials}</div>
+        <div class="lb-info">
+          <div class="lb-name">${m.name}${isMe?' <span style="font-size:11px;color:var(--text-3);font-weight:500;">(you)</span>':''}</div>
+          <div class="lb-bar"><div class="lb-bar-fill" style="width:${barW}%;background:${barCol[idx]}"></div></div>
+          <div class="lb-sub">${sub} · ${checkedInForYesterday(m)?'✓ logged':'not logged yet'}</div>
+        </div>
+        <div class="lb-score" style="color:${scCol[idx]}">${score}</div>
+      </div>`;
+    } else {
+      const t = totalMinutes(m);
+      const maxT = Math.max(...sorted.map(x=>totalMinutes(x)),1);
+      return `<div class="lb-row">
+        <div style="font-family:'JetBrains Mono',monospace; font-size:12px; color:${rankColor}; width:28px; flex-shrink:0; text-align:center; font-weight:600;">#${i+1}</div>
+        <div class="lb-avatar ${avCls[idx]}">${m.initials}</div>
+        <div class="lb-info">
+          <div class="lb-name">${m.name}${isMe?' <span style="font-size:11px;color:var(--text-3);font-weight:500;">(you)</span>':''}</div>
+          <div class="lb-bar"><div class="lb-bar-fill" style="width:${Math.round(t/maxT*100)}%;background:${barCol[idx]}"></div></div>
+          <div class="lb-sub">${t}m total · ${checkedInForYesterday(m)?'✓ logged':'not logged yet'}</div>
+        </div>
+        <div class="lb-score" style="color:${scCol[idx]}">${t}m</div>
+      </div>`;
+    }
   }).join('');
 
   const btn = document.getElementById('detail-checkin-btn');
