@@ -109,7 +109,7 @@ html, body {
   border: none;
   border-radius: 10px; width: 34px; height: 34px;
   display: flex; align-items: center; justify-content: center;
-  cursor: pointer; color: #fff; font-size: 15px;
+  cursor: pointer; color: #fff; font-size: 20px;
   transition: background 0.15s; flex-shrink: 0;
 }
 .back-btn:hover { background: rgba(255,255,255,0.25); }
@@ -129,7 +129,7 @@ html, body {
 .card { background: var(--paper); border: 1.5px solid var(--border); border-radius: var(--r); padding: 16px 18px; margin-bottom: 12px; box-shadow: var(--shadow-sm); }
 
 /* ── Section label ── */
-.section-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.1em; color: var(--ink-3); text-transform: uppercase; margin-bottom: 10px; margin-top: 24px; }
+.section-label { font-family: 'Nunito', sans-serif; font-size: 12px; font-weight: 800; letter-spacing: 0.06em; color: var(--ink-2); text-transform: uppercase; margin-bottom: 10px; margin-top: 24px; }
 .section-label:first-child { margin-top: 0; }
 
 /* ── Inputs ── */
@@ -206,7 +206,7 @@ select.input-field option { background: var(--paper); color: var(--ink); }
   padding: 14px 16px;
   box-shadow: var(--shadow-sm);
 }
-.stat-label { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--ink-3); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px; }
+.stat-label { font-family: 'Nunito', sans-serif; font-size: 11px; font-weight: 800; color: var(--ink-2); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 4px; }
 .stat-val { font-size: 30px; font-weight: 800; color: var(--ink); letter-spacing: -0.02em; line-height: 1; }
 
 /* ── Stakes ── */
@@ -352,7 +352,6 @@ select.input-field option { background: var(--paper); color: var(--ink); }
       <div style="font-size:10px; color:rgba(255,255,255,0.5); font-weight:700; letter-spacing:0.06em;">OFFEED</div>
       <h1 id="detail-title" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></h1>
     </div>
-    <div class="topbar-end" id="detail-days-pill"></div>
   </div>
   <div class="body">
     <button class="btn btn-primary" id="detail-checkin-btn" onclick="go('s-checkin')" style="margin-bottom:20px;">Log yesterday's screen time</button>
@@ -702,7 +701,6 @@ function renderDetail(c) {
   const dl = daysLeft(c);
 
   document.getElementById('detail-title').textContent = c.name;
-  document.getElementById('detail-days-pill').innerHTML = `<span class="pill ${dl<=2?'pill-warn':'pill-accent'}">${dl}d left</span>`;
   document.getElementById('detail-stats').innerHTML = `
     <div class="stat-card"><div class="stat-label">participants</div><div class="stat-val">${c.members.length}</div></div>
     <div class="stat-card"><div class="stat-label">days left</div><div class="stat-val">${dl}</div></div>
