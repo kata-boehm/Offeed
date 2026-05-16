@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head><title>Generate Offeed Icons</title></head>
+<body style="font-family:sans-serif; padding:32px; background:#f0f8fa;">
+<h2>Offeed Icon Generator</h2>
+<p>Click each button to download the PNG icons, then add them to your project folder.</p>
+<div style="display:flex; gap:24px; margin:24px 0; align-items:flex-end;">
+  <div>
+    <canvas id="c192" width="192" height="192" style="border-radius:36px; display:block; margin-bottom:8px;"></canvas>
+    <button onclick="download('c192','icon-192.png')">Download icon-192.png</button>
+  </div>
+  <div>
+    <canvas id="c512" width="512" height="512" style="border-radius:96px; display:block; margin-bottom:8px; width:192px; height:192px;"></canvas>
+    <button onclick="download('c512','icon-512.png')">Download icon-512.png</button>
+  </div>
+</div>
+<script>
+function drawIcon(canvas) {
+  const s = canvas.width;
+  const r = s * 0.21;
+  const ctx = canvas.getContext('2d');
+
+  // Background gradient
+  const grad = ctx.createLinearGradient(0, 0, s, s);
+  grad.addColorStop(0, '#2d9ab0');
+  grad.addColorStop(1, '#0d3e4a');
+  roundRect(ctx, 0, 0, s, s, r, grad);
+
+  // Phone body
+  const pw = s * 0.42, ph = s * 0.69, px = (s - pw) / 2, py = s * 0.155;
+  roundRect(ctx, px, py, pw, ph, s * 0.07, 'white');
+
+  // Screen tint
+  const sx = px + s*0.03, sy = py + s*0.07, sw = pw - s*0.06, sh = ph - s*0.14;
+  ctx.fillStyle = 'rgba(30,122,140,0.09)';
+  roundRect(ctx, sx, sy, sw, sh, s*0.02, 'rgba(30,122,140,0.09)');
+
+  // Camera notch
+  ctx.fillStyle = 'rgba(30,122,140,0.2)';
+  roundRect(ctx, s*0.43, py + s*0.015, s*0.14, s*0.02, s*0.01, 'rgba(30,122,140,0.2)');
+
+  // Feed lines
+  const lx = px + s*0.07, lw1 = pw*0.72, lw2 = pw*0.52, lw3 = pw*0.62, lh = s*0.028, lr = lh/2;
+  const row = (y, w) => { ctx.fillStyle='rgba(13,62,74,0.2)'; roundRect(ctx, lx, y, w, lh, lr, 'rgba(13,62,74,0.2)'); };
+  row(py + ph*0.27, lw1);
+  row(py + ph*0.39, lw2);
+  row(py + ph*0.51, lw3);
+
+  // Home bar
+  ctx.fillStyle = 'rgba(30,122,140,0.2)';
+  const bw = pw*0.38, bh = s*0.02;
+  roundRect(ctx, px + (pw-bw)/2, py + ph - bh - s*0.03, bw, bh, bh/2, 'rgba(30,122,140,0.2)');
+
+  // Coral power badge
+  const bx = px + pw - s*0.02, by = py - s*0.02, br = s*0.11;
+  ctx.beginPath(); ctx.arc(bx, by, br + s*0.014, 0, Math.PI*2);
+  ctx.fillStyle = '#0d3e4a'; ctx.fill();
+  ctx.beginPath(); ctx.arc(bx, by, br, 0, Math.PI*2);
+  ctx.fillStyle = '#f4845f'; ctx.fill();
+
+  // Power icon
+  ctx.strokeStyle = 'white'; ctx.lineWidth = s*0.018; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(bx, by - br*0.55); ctx.lineTo(bx, by - br*0.05); ctx.stroke();
+  ctx.beginPath(); ctx.arc(bx, by, br*0.48, Math.PI*1.25, Math.PI*1.75, false);
+  ctx.stroke();
+  ctx.beginPath(); ctx.arc(bx, by, br*0.48, Math.PI*1.75, Math.PI*0.75, false);
+  ctx.stroke();
+}
+
+function roundRect(ctx, x, y, w, h, r, fill) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.arcTo(x + w, y, x + w, y + r, r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(x + r, y + h);
+  ctx.arcTo(x, y + h, x, y + h - r, r);
+  ctx.lineTo(x, y + r);
+  ctx.arcTo(x, y, x + r, y, r);
+  ctx.closePath();
+  ctx.fillStyle = fill;
+  ctx.fill();
+}
+
+function download(id, name) {
+  const a = document.createElement('a');
+  a.download = name;
+  a.href = document.getElementById(id).toDataURL('image/png');
+  a.click();
+}
+
+drawIcon(document.getElementById('c192'));
+drawIcon(document.getElementById('c512'));
+</script>
+</body>
+</html>

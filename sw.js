@@ -1,6 +1,9 @@
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
 
+// Required by Chrome for PWA installability
+self.addEventListener('fetch', e => e.respondWith(fetch(e.request)));
+
 // Fires on browsers that support Periodic Background Sync (Chrome/Edge)
 self.addEventListener('periodicsync', e => {
   if (e.tag === 'offeed-reminder') {
