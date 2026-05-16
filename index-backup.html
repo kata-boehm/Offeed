@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Offeed</title>
+<link rel="manifest" href="/Offeed/manifest.json">
+<link rel="apple-touch-icon" href="/Offeed/icon.svg">
+<meta name="theme-color" content="#1e7a8c">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --petrol: #1e7a8c;
+  --petrol-dark: #155f6e;
+  --petrol-xdark: #0d3e4a;
+  --petrol-light: #3d9fb5;
+  --petrol-pale: #e6f4f7;
+  --petrol-mid: #cce9ef;
+  --petrol-dim: rgba(30,122,140,0.12);
+  --petrol-glow: rgba(30,122,140,0.22);
+
+  --bg: #d8ecf2;
+  --paper: #ffffff;
+  --ink: #0d3e4a;
+  --ink-2: #4a7a87;
+  --ink-3: #8ab4bc;
+
+  --coral: #f4845f;
+  --coral-dim: rgba(244,132,95,0.12);
+  --green: #2aaa72;
+  --green-dim: rgba(42,170,114,0.1);
+  --amber: #f0a830;
+  --amber-dim: rgba(240,168,48,0.12);
+  --red: #e05c5c;
+  --red-dim: rgba(224,92,92,0.1);
+
+  --border: rgba(30,122,140,0.1);
+  --border-med: rgba(30,122,140,0.18);
+  --shadow-sm: 0 2px 8px rgba(13,62,74,0.07);
+  --shadow-md: 0 4px 20px rgba(13,62,74,0.11);
+  --r: 18px;
+  --r-sm: 12px;
+  --r-xs: 8px;
+
+  /* aliases for JS inline styles */
+  --accent: #1e7a8c;
+  --navy-500: rgba(30,122,140,0.15);
+  --gold: #c87d10;
+  --text-1: #0d3e4a;
+  --text-2: #4a7a87;
+  --text-3: #8ab4bc;
+  --warn: #e05c5c;
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Nunito', sans-serif;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app { height: 100vh; display: flex; flex-direction: column; max-width: 430px; margin: 0 auto; }
+
+.screen { display: none; flex-direction: column; flex: 1; overflow-y: auto; overflow-x: hidden; }
+.screen.active { display: flex; animation: screenIn 0.26s cubic-bezier(0.16,1,0.3,1); }
+@keyframes screenIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+.screen::-webkit-scrollbar { width: 3px; }
+.screen::-webkit-scrollbar-track { background: transparent; }
+.screen::-webkit-scrollbar-thumb { background: var(--petrol-mid); border-radius: 3px; }
+
+/* ── Loading ── */
+.loading-overlay {
+  position: fixed; inset: 0;
+  background: var(--petrol);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 16px; z-index: 100;
+}
+.loading-overlay .wordmark {
+  font-size: 32px; font-weight: 800; color: #fff; letter-spacing: -0.01em;
+}
+.spinner {
+  width: 24px; height: 24px;
+  border: 2px solid rgba(255,255,255,0.25);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Topbar ── */
+.topbar {
+  padding: 14px 20px 12px;
+  display: flex; align-items: center; gap: 12px;
+  flex-shrink: 0;
+  background: var(--petrol);
+  color: #fff;
+}
+.topbar h1 { font-size: 16px; font-weight: 700; color: #fff; }
+.topbar-end { margin-left: auto; }
+
+.back-btn {
+  background: rgba(255,255,255,0.15);
+  border: none;
+  border-radius: 10px; width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: #fff; font-size: 22px; font-weight: 700; line-height: 1;
+  transition: background 0.15s; flex-shrink: 0;
+}
+.back-btn:hover { background: rgba(255,255,255,0.25); }
+
+/* ── Layout ── */
+.body { padding: 20px; padding-bottom: 140px; flex: 1; }
+.body-center { padding: 32px 24px 140px; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
+/* ── Pills ── */
+.pill { display: inline-flex; align-items: center; gap: 4px; font-family: 'JetBrains Mono', monospace; font-size: 10px; padding: 4px 10px; border-radius: 99px; letter-spacing: 0.03em; font-weight: 600; }
+.pill-accent { background: var(--green-dim); color: var(--green); border: 1.5px solid rgba(42,170,114,0.2); }
+.pill-warn { background: var(--red-dim); color: var(--red); border: 1.5px solid rgba(224,92,92,0.2); }
+.pill-gold { background: var(--amber-dim); color: #c87d10; border: 1.5px solid rgba(240,168,48,0.25); }
+.pill-muted { background: var(--petrol-pale); color: var(--ink-2); border: 1.5px solid var(--border); }
+
+/* ── Card ── */
+.card { background: var(--paper); border: 1.5px solid var(--border); border-radius: var(--r); padding: 16px 18px; margin-bottom: 12px; box-shadow: var(--shadow-sm); }
+
+/* ── Section label ── */
+.section-label { font-family: 'Nunito', sans-serif; font-size: 12px; font-weight: 800; letter-spacing: 0.06em; color: var(--ink-2); text-transform: uppercase; margin-bottom: 10px; margin-top: 24px; }
+.section-label:first-child { margin-top: 0; }
+
+/* ── Inputs ── */
+.input-label { font-size: 12px; color: var(--ink-2); font-weight: 700; letter-spacing: 0.02em; margin-bottom: 6px; }
+.input-field {
+  width: 100%;
+  background: var(--paper);
+  border: 1.5px solid var(--border-med);
+  border-radius: var(--r-sm);
+  padding: 12px 15px;
+  color: var(--ink);
+  font-family: 'Nunito', sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  margin-bottom: 16px;
+}
+.input-field::placeholder { color: var(--ink-3); }
+.input-field:focus { border-color: var(--petrol); box-shadow: 0 0 0 3px var(--petrol-dim); }
+select.input-field option { background: var(--paper); color: var(--ink); }
+
+.big-input-wrap {
+  display: flex; align-items: baseline; gap: 8px;
+  background: var(--paper);
+  border: 1.5px solid var(--border-med);
+  border-radius: var(--r);
+  padding: 20px 22px;
+  margin-bottom: 16px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.big-input-wrap:focus-within { border-color: var(--petrol); box-shadow: 0 0 0 3px var(--petrol-dim); }
+.big-input {
+  background: none; border: none; outline: none;
+  font-family: 'Nunito', sans-serif;
+  font-size: 56px; font-weight: 800;
+  color: var(--petrol);
+  width: 80px;
+  -moz-appearance: textfield;
+}
+.big-input::-webkit-inner-spin-button, .big-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+.big-unit { font-family: 'JetBrains Mono', monospace; font-size: 16px; color: var(--ink-3); }
+
+/* ── Buttons ── */
+.btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; padding: 14px 20px;
+  border-radius: var(--r-sm);
+  font-family: 'Nunito', sans-serif;
+  font-size: 15px; font-weight: 700;
+  cursor: pointer; transition: all 0.18s; border: none;
+  letter-spacing: 0.01em;
+}
+.btn-primary { background: var(--petrol); color: #fff; box-shadow: 0 3px 12px var(--petrol-glow); }
+.btn-primary:hover { background: var(--petrol-dark); transform: translateY(-1px); box-shadow: 0 5px 18px var(--petrol-glow); }
+.btn-primary:active { transform: scale(0.99); }
+.btn-ghost { background: var(--paper); color: var(--ink-2); border: 1.5px solid var(--border-med); }
+.btn-ghost:hover { border-color: var(--petrol); color: var(--petrol); }
+.btn + .btn { margin-top: 10px; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+
+/* ── Error ── */
+.error-msg { font-size: 12px; color: var(--red); margin-top: -10px; margin-bottom: 12px; font-weight: 600; min-height: 18px; }
+
+/* ── Divider ── */
+.divider { height: 1.5px; background: var(--border); margin: 16px 0; }
+
+/* ── Stats ── */
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.stat-card {
+  background: var(--paper);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+}
+.stat-label { font-family: 'Nunito', sans-serif; font-size: 11px; font-weight: 800; color: var(--ink-2); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 4px; }
+.stat-val { font-size: 30px; font-weight: 800; color: var(--ink); letter-spacing: -0.02em; line-height: 1; }
+
+/* ── Stakes ── */
+.stakes-banner { background: var(--amber-dim); border: 1.5px solid rgba(240,168,48,0.2); border-radius: var(--r-sm); padding: 12px 15px; font-size: 14px; color: #c87d10; display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-weight: 600; }
+
+/* ── Leaderboard ── */
+.lb-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1.5px solid var(--border); }
+.lb-row:last-child { border-bottom: none; }
+.lb-avatar { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; border: 2px solid transparent; }
+.av-gold { background: var(--amber-dim); color: #c87d10; border-color: rgba(240,168,48,0.3); }
+.av-accent { background: var(--green-dim); color: var(--green); border-color: rgba(42,170,114,0.3); }
+.av-muted { background: var(--petrol-pale); color: var(--ink-2); border-color: var(--border); }
+.av-warn { background: var(--red-dim); color: var(--red); border-color: rgba(224,92,92,0.25); }
+.lb-info { flex: 1; min-width: 0; }
+.lb-name { font-size: 14px; font-weight: 600; color: var(--ink); }
+.lb-bar { height: 3px; background: var(--petrol-pale); border-radius: 2px; margin-top: 5px; overflow: hidden; }
+.lb-bar-fill { height: 100%; border-radius: 2px; }
+.lb-sub { font-size: 10px; color: var(--ink-3); margin-top: 3px; font-family: 'JetBrains Mono', monospace; }
+.lb-score { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 500; text-align: right; flex-shrink: 0; }
+
+/* ── Invite ── */
+.invite-box {
+  background: var(--petrol-xdark);
+  border-radius: var(--r);
+  padding: 18px 20px;
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 8px;
+}
+.invite-url { font-family: 'JetBrains Mono', monospace; font-size: 20px; color: #fff; flex: 1; letter-spacing: 0.2em; font-weight: 500; }
+.copy-btn { background: rgba(255,255,255,0.14); border: 1.5px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 7px 13px; font-size: 12px; color: rgba(255,255,255,0.85); cursor: pointer; font-family: 'Nunito', sans-serif; font-weight: 700; white-space: nowrap; transition: all 0.15s; }
+.copy-btn:hover { background: rgba(255,255,255,0.24); color: #fff; }
+
+/* ── Bottom nav ── */
+.bottom-nav { display: flex; background: var(--petrol); flex-shrink: 0; position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 430px; z-index: 20; }
+.nav-btn { flex: 1; background: none; border: none; cursor: pointer; padding: 10px 0 14px; display: flex; flex-direction: column; align-items: center; gap: 3px; color: rgba(255,255,255,0.5); font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.06em; transition: color 0.15s; text-transform: uppercase; }
+.nav-btn svg { width: 20px; height: 20px; stroke-width: 1.5; }
+.nav-btn.active { color: #fff; }
+.nav-btn:hover { color: rgba(255,255,255,0.75); }
+
+/* ── Empty state ── */
+.empty-state { text-align: center; padding: 32px 0; }
+.empty-icon { font-size: 52px; margin-bottom: 14px; }
+.empty-icon { font-size: 32px; margin-bottom: 12px; }
+
+/* ── Challenge list ── */
+.challenge-list-item { display: flex; align-items: center; gap: 12px; padding: 14px 0; border-bottom: 1.5px solid var(--border); cursor: pointer; transition: opacity 0.15s; }
+.challenge-list-item:last-child { border-bottom: none; }
+.challenge-list-item:hover { opacity: 0.65; }
+
+/* ── Sticky topbar ── */
+.topbar { position: sticky; top: 0; z-index: 10; }
+
+/* ── Toggle switch ── */
+.toggle { position: relative; display: inline-block; width: 46px; height: 26px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+.toggle-slider { position: absolute; inset: 0; background: var(--border-med); border-radius: 26px; cursor: pointer; transition: background 0.2s; }
+.toggle-slider::before { content: ''; position: absolute; width: 20px; height: 20px; left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: transform 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
+.toggle input:checked + .toggle-slider { background: var(--petrol); }
+.toggle input:checked + .toggle-slider::before { transform: translateX(20px); }
+
+/* ── Duration picker ── */
+.duration-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
+.dur-btn { background: var(--paper); border: 1.5px solid var(--border-med); border-radius: var(--r-sm); padding: 11px 6px; font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 700; color: var(--ink-2); cursor: pointer; transition: all 0.15s; }
+.dur-btn.active { background: var(--petrol); border-color: var(--petrol); color: #fff; }
+.dur-btn:hover:not(.active) { border-color: var(--petrol); color: var(--petrol); }
+
+/* ── Week bars ── */
+.week-bars { display: flex; align-items: flex-end; gap: 5px; height: 52px; margin: 4px 0 6px; }
+.week-bar { flex: 1; border-radius: 4px 4px 0 0; }
+.week-days { display: flex; gap: 5px; }
+.week-day { flex: 1; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--ink-3); }
+.week-day.today { color: var(--petrol); font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- Loading -->
+<div class="loading-overlay" id="loading">
+  <div class="wordmark">Offeed</div>
+  <div class="spinner"></div>
+</div>
+
+<!-- ══ Onboarding ══ -->
+<div class="screen" id="s-onboard">
+  <!-- petrol blue hero banner -->
+  <div style="background:var(--petrol); padding:40px 24px 36px; text-align:center;">
+    <div style="font-size:36px; margin-bottom:12px;">📵</div>
+    <div style="font-size:28px; font-weight:800; color:#fff; line-height:1.2; margin-bottom:10px;">Offeed</div>
+    <div style="font-size:14px; color:rgba(255,255,255,0.75); line-height:1.7; max-width:280px; margin:0 auto;">Challenge your friends to use social media less. Loser pays up. 🎉</div>
+  </div>
+  <div class="body" style="padding-top:28px;">
+    <div class="input-label">Your name</div>
+    <input class="input-field" type="text" id="onboard-name" placeholder="e.g. Kata" maxlength="20" onkeydown="if(event.key==='Enter')onboardSubmit()">
+    <div id="onboard-error" class="error-msg"></div>
+    <button class="btn btn-primary" onclick="onboardSubmit()">Let's go! 🚀</button>
+    <div style="margin:16px 0; display:flex; align-items:center; gap:10px;">
+      <div class="divider" style="flex:1; margin:0;"></div>
+      <span style="font-size:12px; color:var(--ink-3); font-weight:600;">or</span>
+      <div class="divider" style="flex:1; margin:0;"></div>
+    </div>
+    <button class="btn btn-ghost" onclick="go('s-join')">Join with invite code</button>
+  </div>
+</div>
+
+<!-- ══ Join ══ -->
+<div class="screen" id="s-join">
+  <div class="topbar">
+    <button class="back-btn" onclick="go('s-onboard')">&#8592;</button>
+    <div style="flex:1; min-width:0;">
+      <div style="font-size:10px; color:rgba(255,255,255,0.5); font-weight:700; letter-spacing:0.06em;">OFFEED</div>
+      <h1>Join a challenge</h1>
+    </div>
+  </div>
+  <div class="body">
+    <div style="font-size:14px; color:var(--ink-2); margin-bottom:22px; line-height:1.7; font-weight:500;">Paste the invite code your friend shared with you.</div>
+    <div class="input-label">Your name</div>
+    <input class="input-field" type="text" id="join-name" placeholder="e.g. Kata" maxlength="20">
+    <div class="input-label">Invite code</div>
+    <input class="input-field" type="text" id="join-code" placeholder="e.g. A3BC9F" style="font-family:'JetBrains Mono',monospace; letter-spacing:0.1em; text-transform:uppercase;" maxlength="6">
+    <div id="join-error" class="error-msg"></div>
+    <button class="btn btn-primary" onclick="joinChallenge()">Join challenge</button>
+    <button class="btn btn-ghost" onclick="go('s-onboard')">Back</button>
+  </div>
+</div>
+
+<!-- ══ Home ══ -->
+<div class="screen" id="s-home">
+  <div class="topbar">
+    <div style="flex:1; min-width:0;">
+      <div style="font-size:20px; font-weight:800; color:#fff; letter-spacing:-0.01em; line-height:1;">Offeed</div>
+      <div style="font-size:12px; color:rgba(255,255,255,0.6); font-weight:600; margin-top:2px;">Hey, <span id="home-username">—</span> 👋</div>
+    </div>
+    <div class="topbar-end">
+      <button class="btn btn-ghost" style="width:auto; padding:8px 14px; font-size:13px; background:rgba(255,255,255,0.15); border-color:rgba(255,255,255,0.2); color:#fff;" onclick="go('s-join')">Join</button>
+    </div>
+  </div>
+  <div class="body">
+    <div class="section-label">Your challenges</div>
+    <div id="challenge-list"></div>
+  </div>
+</div>
+
+<!-- ══ Challenge detail ══ -->
+<div class="screen" id="s-detail">
+  <div class="topbar">
+    <button class="back-btn" onclick="go('s-home'); loadMyChallenges();">&#8592;</button>
+    <div style="flex:1; min-width:0;">
+      <div style="font-size:10px; color:rgba(255,255,255,0.5); font-weight:700; letter-spacing:0.06em;">OFFEED</div>
+      <h1 id="detail-title" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></h1>
+    </div>
+  </div>
+  <div class="body">
+    <div id="detail-winner-banner"></div>
+    <button class="btn btn-primary" id="detail-checkin-btn" onclick="go('s-checkin')" style="margin-bottom:20px;">Log yesterday's screen time</button>
+    <div class="stat-grid" id="detail-stats"></div>
+    <div id="detail-stakes"></div>
+    <div class="section-label">Leaderboard</div>
+    <div class="card" style="padding:4px 18px 6px;" id="detail-lb"></div>
+    <div class="section-label">Invite friends</div>
+    <button class="btn btn-primary" id="detail-share-btn" onclick="shareInviteDetail()" style="margin-bottom:8px;">Share invite 📋</button>
+    <div style="font-size:11px; color:var(--ink-3); font-family:'JetBrains Mono',monospace; margin-bottom:20px; letter-spacing:0.02em;">Copies a ready-to-send message with the link + code</div>
+    <div class="divider"></div>
+    <button class="btn btn-ghost" onclick="leaveChallenge()" style="margin-top:12px; color:var(--red); border-color:rgba(224,92,92,0.3);">Leave challenge</button>
+  </div>
+</div>
+
+<!-- ══ Check-in ══ -->
+<div class="screen" id="s-checkin">
+  <div class="topbar">
+    <button class="back-btn" onclick="go('s-detail')">&#8592;</button>
+    <div style="flex:1; min-width:0;">
+      <div style="font-size:10px; color:rgba(255,255,255,0.5); font-weight:700; letter-spacing:0.06em;">OFFEED</div>
+      <h1>Yesterday's check-in</h1>
+    </div>
+  </div>
+  <div class="body">
+    <div style="font-size:14px; color:var(--ink-2); margin-bottom:6px; line-height:1.7; font-weight:500;">How many minutes on social media <span style="color:var(--ink); font-weight:700;">yesterday</span>?</div>
+    <div style="font-size:12px; color:var(--ink-3); margin-bottom:24px; font-family:'JetBrains Mono',monospace; line-height:1.9;">iOS: Screen Time → yesterday.<br>Android: Digital Wellbeing → yesterday.</div>
+    <div class="input-label">Time on social media yesterday</div>
+    <div style="display:flex; gap:12px; margin-bottom:16px;">
+      <div class="big-input-wrap" style="flex:1; margin-bottom:0;">
+        <input class="big-input" type="number" id="checkin-hours" min="0" max="24" placeholder="0" oninput="if(+this.value>24)this.value=24; if(+this.value<0)this.value=0; updateCheckinFeedback()">
+        <span class="big-unit">h</span>
+      </div>
+      <div class="big-input-wrap" style="flex:1; margin-bottom:0;">
+        <input class="big-input" type="number" id="checkin-mins" min="0" max="60" placeholder="0" oninput="if(+this.value>60)this.value=60; if(+this.value<0)this.value=0; updateCheckinFeedback()">
+        <span class="big-unit">min</span>
+      </div>
+    </div>
+    <div id="checkin-feedback" style="font-size:14px; min-height:44px; margin-bottom:20px; line-height:1.7; color:var(--ink-2); transition:color 0.2s; font-weight:600;"></div>
+    <div class="divider"></div>
+    <div style="font-size:10px; color:var(--ink-3); font-family:'JetBrains Mono',monospace; letter-spacing:0.08em; margin:16px 0 10px; text-transform:uppercase;">Rank preview</div>
+    <div class="card" id="rank-preview" style="padding:14px 18px;">
+      <span style="font-size:13px; color:var(--ink-3); font-weight:500;">Enter minutes above</span>
+    </div>
+    <button class="btn btn-primary" style="margin-top:20px;" id="submit-btn" onclick="submitCheckin()">Submit</button>
+    <button class="btn btn-ghost" onclick="go('s-detail')">Cancel</button>
+  </div>
+</div>
+
+<!-- ══ Submitted ══ -->
+<div class="screen" id="s-submitted">
+  <div class="body-center" style="text-align:center; gap:0; width:100%;">
+    <div style="font-size:13px; font-weight:800; color:var(--petrol); letter-spacing:0.02em; margin-bottom:24px;">Offeed</div>
+    <div style="width:72px; height:72px; background:var(--green-dim); border:2px solid rgba(42,170,114,0.25); border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 20px; font-size:28px;">✅</div>
+    <div style="font-size:26px; font-weight:800; margin-bottom:8px; color:var(--ink);">Checked in!</div>
+    <div id="submitted-sub" style="font-size:14px; color:var(--ink-2); margin-bottom:32px; line-height:1.7; max-width:280px; font-weight:500;"></div>
+    <div class="card" style="width:100%; text-align:left; margin-bottom:16px;">
+      <div style="font-size:10px; color:var(--ink-3); font-family:'JetBrains Mono',monospace; letter-spacing:0.08em; margin-bottom:12px; text-transform:uppercase;">Your week</div>
+      <div class="week-bars" id="week-bars-sub"></div>
+      <div class="week-days" id="week-days-sub"></div>
+    </div>
+    <button class="btn btn-primary" style="width:100%;" onclick="openChallenge(state.activeChallengeId)">See leaderboard</button>
+  </div>
+</div>
+
+<!-- ══ New challenge ══ -->
+<div class="screen" id="s-new">
+  <div class="topbar">
+    <button class="back-btn" onclick="go('s-home')">&#8592;</button>
+    <div style="flex:1; min-width:0;">
+      <div style="font-size:10px; color:rgba(255,255,255,0.5); font-weight:700; letter-spacing:0.06em;">OFFEED</div>
+      <h1>New challenge</h1>
+    </div>
+  </div>
+  <div class="body">
+    <div class="input-label">Challenge name</div>
+    <input class="input-field" type="text" id="new-name" placeholder="e.g. No Scroll May" maxlength="30">
+    <div class="input-label">Daily goal (max screen time)</div>
+    <div style="display:flex; gap:12px; margin-bottom:16px;">
+      <div class="big-input-wrap" style="flex:1; margin-bottom:0; padding:14px 16px;">
+        <input class="big-input" type="number" id="new-goal-hours" min="0" max="24" placeholder="0" oninput="if(+this.value>24)this.value=24; if(+this.value<0)this.value=0;" style="font-size:36px; width:60px;">
+        <span class="big-unit">h</span>
+      </div>
+      <div class="big-input-wrap" style="flex:1; margin-bottom:0; padding:14px 16px;">
+        <input class="big-input" type="number" id="new-goal-mins" min="0" max="60" placeholder="0" oninput="if(+this.value>60)this.value=60; if(+this.value<0)this.value=0;" style="font-size:36px; width:60px;">
+        <span class="big-unit">min</span>
+      </div>
+    </div>
+    <div class="input-label">Duration</div>
+    <div class="duration-grid">
+      <button type="button" class="dur-btn" data-days="3" onclick="selectDuration(this)">3 days</button>
+      <button type="button" class="dur-btn" data-days="5" onclick="selectDuration(this)">5 days</button>
+      <button type="button" class="dur-btn active" data-days="7" onclick="selectDuration(this)">1 week</button>
+      <button type="button" class="dur-btn" data-days="14" onclick="selectDuration(this)">2 weeks</button>
+      <button type="button" class="dur-btn" data-days="21" onclick="selectDuration(this)">3 weeks</button>
+      <button type="button" class="dur-btn" data-days="30" onclick="selectDuration(this)">1 month</button>
+      <button type="button" class="dur-btn" data-days="60" onclick="selectDuration(this)">2 months</button>
+      <button type="button" class="dur-btn" data-days="90" onclick="selectDuration(this)">3 months</button>
+    </div>
+    <input type="hidden" id="new-duration" value="7">
+    <div class="input-label">Stakes (loser pays)</div>
+    <input class="input-field" type="text" id="new-stakes" placeholder="e.g. buys everyone a coffee" maxlength="60">
+    <div id="new-error" class="error-msg"></div>
+    <button class="btn btn-primary" id="create-btn" onclick="createChallenge()">Create &amp; get invite code ›</button>
+    <button class="btn btn-ghost" onclick="go('s-home')">Cancel</button>
+  </div>
+</div>
+
+<!-- ══ Created ══ -->
+<div class="screen" id="s-created">
+  <div class="body-center" style="text-align:center; gap:0; width:100%;">
+    <div style="font-size:13px; font-weight:800; color:var(--petrol); letter-spacing:0.02em; margin-bottom:24px;">Offeed</div>
+    <div style="font-size:48px; margin-bottom:16px;">🎉</div>
+    <div style="font-size:22px; font-weight:800; margin-bottom:6px; color:var(--ink);" id="created-chal-name"></div>
+    <div style="font-size:14px; color:var(--ink-2); margin-bottom:28px; line-height:1.7; max-width:260px; font-weight:500;">Share this code with your friends. They open this page and enter it to join — from any device, anywhere.</div>
+    <button class="btn btn-primary" id="created-share-btn" onclick="shareInviteCreated()" style="width:100%; margin-bottom:10px;">Share invite 📋</button>
+    <div style="font-size:11px; color:var(--ink-3); font-family:'JetBrains Mono',monospace; margin-bottom:16px;">Copies a ready-to-send message with the link + code</div>
+    <button class="btn btn-ghost" style="width:100%;" onclick="openChallenge(state.createdChallengeId)">Go to challenge ›</button>
+  </div>
+</div>
+
+<!-- ══ Account ══ -->
+<div class="screen" id="s-account">
+  <div class="topbar">
+    <div style="flex:1; min-width:0;">
+      <div style="font-size:10px; color:rgba(255,255,255,0.5); font-weight:700; letter-spacing:0.06em;">OFFEED</div>
+      <h1>Account</h1>
+    </div>
+  </div>
+  <div class="body">
+    <div class="input-label">Your name</div>
+    <input class="input-field" type="text" id="profile-name" placeholder="e.g. Kata" maxlength="20" onkeydown="if(event.key==='Enter')saveProfile()">
+    <div id="profile-error" class="error-msg"></div>
+    <button class="btn btn-primary" onclick="saveProfile()">Save changes</button>
+
+    <div class="section-label" style="margin-top:28px;">Notifications</div>
+    <div class="card" style="display:flex; align-items:center; gap:14px; margin-bottom:8px;">
+      <div style="flex:1;">
+        <div style="font-size:14px; font-weight:700; color:var(--ink);">Daily reminder</div>
+        <div style="font-size:12px; color:var(--ink-3); margin-top:2px; font-weight:500;">Nudges you to log your screen time</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="notif-toggle" onchange="toggleNotifications(this.checked)">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div id="notif-msg" style="font-size:12px; color:var(--ink-3); font-weight:500; min-height:18px; padding:0 2px;"></div>
+  </div>
+</div>
+
+<!-- ══ Global bottom nav ══ -->
+<div class="bottom-nav" id="global-nav" style="display:none;">
+  <button class="nav-btn" id="nav-home" onclick="go('s-home'); loadMyChallenges();">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9.5L12 4l9 5.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    home
+  </button>
+  <button class="nav-btn" id="nav-new" onclick="go('s-new')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8" stroke-linecap="round"/></svg>
+    new
+  </button>
+  <button class="nav-btn" id="nav-account" onclick="go('s-account')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke-linecap="round"/></svg>
+    account
+  </button>
+</div>
+
+</div><!-- .app -->
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs, arrayUnion, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyA1JxtlZQK0MF84D9SSjHx8AuCbyOX90yA",
+  authDomain: "screentime-a811e.firebaseapp.com",
+  projectId: "screentime-a811e",
+  storageBucket: "screentime-a811e.firebasestorage.app",
+  messagingSenderId: "964906567895",
+  appId: "1:964906567895:web:25577347843e4c4113c892"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// ── Helpers ────────────────────────────────────────────────────────
+const LS = { get: k => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } }, set: (k,v) => localStorage.setItem(k,JSON.stringify(v)) };
+function makeId() { return Math.random().toString(36).slice(2,8).toUpperCase(); }
+function getToday() { return new Date().toISOString().slice(0,10); }
+function getYesterday() { const d=new Date(); d.setDate(d.getDate()-1); return d.toISOString().slice(0,10); }
+function initials(name) { return name.trim().split(/\s+/).map(w=>w[0]).join('').toUpperCase().slice(0,2); }
+function totalMinutes(member) { return Object.values(member.checkins||{}).reduce((s,v)=>s+v,0); }
+function daysLeft(c) { return Math.max(0, Math.ceil((new Date(c.endDate)-new Date())/864e5)); }
+function checkedInToday(member) { return !!(member.checkins&&member.checkins[getToday()]); }
+function checkedInForYesterday(member) { return !!(member.checkins&&member.checkins[getYesterday()]); }
+function rankSuffix(n) { return ['st','nd','rd'][n-1]||'th'; }
+function go(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  // Nav visibility
+  const nav = document.getElementById('global-nav');
+  if (nav) {
+    nav.style.display = 'flex';
+    nav.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    if (['s-home','s-detail','s-checkin','s-submitted','s-created'].includes(id))
+      document.getElementById('nav-home').classList.add('active');
+    else if (id === 's-new') document.getElementById('nav-new').classList.add('active');
+    else if (id === 's-account') document.getElementById('nav-account').classList.add('active');
+  }
+  // Screen-specific init
+  if (id === 's-new') {
+    document.querySelectorAll('.dur-btn').forEach(b => b.classList.remove('active'));
+    const def = document.querySelector('.dur-btn[data-days="7"]');
+    if (def) def.classList.add('active');
+    const nd = document.getElementById('new-duration'); if (nd) nd.value = '7';
+    ['new-goal-hours','new-goal-mins','new-name','new-stakes'].forEach(i => { const el=document.getElementById(i); if(el) el.value=''; });
+    const ne = document.getElementById('new-error'); if (ne) ne.textContent = '';
+  }
+  if (id === 's-account') {
+    const pn = document.getElementById('profile-name'); if (pn) pn.value = window.state?.me?.name || '';
+    const pe = document.getElementById('profile-error'); if (pe) pe.textContent = '';
+    const nt = document.getElementById('notif-toggle'); if (nt) nt.checked = !!(localStorage.getItem('notif_enabled') && Notification.permission === 'granted');
+    const nm = document.getElementById('notif-msg'); if (nm) nm.textContent = '';
+  }
+}
+window.go = go;
+function showLoading(v) { document.getElementById('loading').style.display = v ? 'flex' : 'none'; }
+function setErr(id, msg) { document.getElementById(id).textContent = msg||''; }
+
+// ── App state (lightweight, persisted locally) ─────────────────────
+window.state = { me: null, activeChallengeId: null, createdChallengeId: null, challengeCache: {} };
+function loadLocalState() { const s=LS.get('sl_v2'); if(s) Object.assign(window.state, s); }
+function saveLocalState() { LS.set('sl_v2', { me: state.me, activeChallengeId: state.activeChallengeId, createdChallengeId: state.createdChallengeId }); }
+
+// ── Firestore ops ─────────────────────────────────────────────────
+async function fetchChallenge(id) {
+  const snap = await getDoc(doc(db,'challenges',id));
+  if (!snap.exists()) return null;
+  return { id, ...snap.data() };
+}
+
+async function saveChallenge(c) {
+  await setDoc(doc(db,'challenges',c.id), c);
+}
+
+// ── Init ──────────────────────────────────────────────────────────
+loadLocalState();
+showLoading(false);
+if (state.me) { await loadMyChallenges(); go('s-home'); }
+else { go('s-onboard'); }
+checkAndShowReminder();
+
+
+// ── Onboarding ────────────────────────────────────────────────────
+window.onboardSubmit = function() {
+  const name = document.getElementById('onboard-name').value.trim();
+  if (!name) { setErr('onboard-error','Please enter your name.'); return; }
+  setErr('onboard-error','');
+  state.me = { name, initials: initials(name) };
+  saveLocalState();
+  loadMyChallenges();
+  go('s-home');
+};
+
+// ── Join ──────────────────────────────────────────────────────────
+window.joinChallenge = async function() {
+  const name = document.getElementById('join-name').value.trim();
+  const code = document.getElementById('join-code').value.trim().toUpperCase();
+  setErr('join-error','');
+  if (!name) { setErr('join-error','Please enter your name.'); return; }
+  if (!code) { setErr('join-error','Please enter an invite code.'); return; }
+
+  const joinBtn = document.querySelector('#s-join .btn-primary');
+  joinBtn.disabled = true; joinBtn.textContent = 'Joining...';
+
+  const c = await fetchChallenge(code);
+  if (!c) { setErr('join-error','Code not found. Double-check it and try again.'); joinBtn.disabled=false; joinBtn.textContent='Join challenge'; return; }
+
+  if (!state.me) state.me = { name, initials: initials(name) };
+  if (!c.members.find(m=>m.name===state.me.name)) {
+    c.members.push({ name: state.me.name, initials: state.me.initials, checkins: {} });
+    await saveChallenge(c);
+  }
+  state.activeChallengeId = code;
+  saveLocalState();
+  joinBtn.disabled=false; joinBtn.textContent='Join challenge';
+  renderDetail(c);
+  go('s-detail');
+};
+
+// ── Create ────────────────────────────────────────────────────────
+window.selectDuration = function(btn) {
+  document.querySelectorAll('.dur-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('new-duration').value = btn.dataset.days;
+};
+
+window.createChallenge = async function() {
+  const name = document.getElementById('new-name').value.trim();
+  const goalHours = parseInt(document.getElementById('new-goal-hours').value) || 0;
+  const goalMins = parseInt(document.getElementById('new-goal-mins').value) || 0;
+  const goal = goalHours * 60 + goalMins;
+  const duration = parseInt(document.getElementById('new-duration').value);
+  const stakes = document.getElementById('new-stakes').value.trim();
+  setErr('new-error','');
+  if (!name) { setErr('new-error','Please enter a name.'); return; }
+  if (!goal||goal<1) { setErr('new-error','Please set a goal.'); return; }
+  if (!stakes) { setErr('new-error','Add stakes — it makes it fun!'); return; }
+
+  const btn = document.getElementById('create-btn');
+  btn.disabled=true; btn.textContent='Creating...';
+
+  const id = makeId();
+  const end = new Date(); end.setDate(end.getDate()+duration);
+  const c = {
+    id, name, goalMinutes: goal, durationDays: duration, stakes,
+    startDate: getToday(), endDate: end.toISOString().slice(0,10),
+    members: [{ name: state.me.name, initials: state.me.initials, checkins: {} }]
+  };
+  await saveChallenge(c);
+  state.createdChallengeId = id;
+  saveLocalState();
+  btn.disabled=false; btn.textContent='Create & get invite code ›';
+
+  document.getElementById('created-chal-name').textContent = name;
+  go('s-created');
+};
+
+// ── Home ──────────────────────────────────────────────────────────
+window.loadMyChallenges = loadMyChallenges;
+async function loadMyChallenges() {
+  document.getElementById('home-username').textContent = state.me?.name || '—';
+  const list = document.getElementById('challenge-list');
+  list.innerHTML = `<div class="empty-state"><div class="spinner" style="margin:0 auto 12px; border-color:var(--border-med); border-top-color:var(--petrol);"></div></div>`;
+
+  const myIds = LS.get('sl_my_challenges_'+state.me?.name) || [];
+  if (!myIds.length) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🏁</div><div style="font-size:20px;font-weight:800;color:var(--ink);margin-bottom:20px;">No challenges yet.</div><button class="btn btn-primary" onclick="go('s-new')" style="margin-bottom:10px;">Create a challenge</button><button class="btn btn-primary" onclick="go('s-join')">Join with invite code</button></div>`;
+    return;
+  }
+
+  const challenges = await Promise.all(myIds.map(id => fetchChallenge(id)));
+  const valid = challenges.filter(Boolean);
+
+  if (!valid.length) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🏁</div><div style="font-size:20px;font-weight:800;color:var(--ink);margin-bottom:20px;">No challenges yet.</div><button class="btn btn-primary" onclick="go('s-new')" style="margin-bottom:10px;">Create a challenge</button><button class="btn btn-primary" onclick="go('s-join')">Join with invite code</button></div>`;
+    return;
+  }
+
+  list.innerHTML = valid.map(c => {
+    const me = c.members.find(m=>m.name===state.me.name);
+    const sorted = [...c.members].sort((a,b)=>totalMinutes(a)-totalMinutes(b));
+    const rank = sorted.findIndex(m=>m.name===state.me.name)+1;
+    const dl = daysLeft(c);
+    const done = me&&checkedInForYesterday(me);
+    const over = getToday() > c.endDate;
+    const pillCls = rank===1?'pill-gold':rank===c.members.length&&c.members.length>1?'pill-warn':'pill-muted';
+    return `<div class="challenge-list-item" onclick="openChallenge('${c.id}')">
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:15px;font-weight:700;color:var(--text-1);margin-bottom:3px;">${c.name}</div>
+        <div style="font-size:11px;color:var(--text-3);font-family:'JetBrains Mono',monospace;">${c.members.length} people · ${over ? '🏁 ended' : dl + ' days left'}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;">
+        <span class="pill ${over ? 'pill-muted' : pillCls}">${over ? '🏆 '+sorted[0].name : rank+rankSuffix(rank)}</span>
+        ${over ? '' : `<span style="font-size:10px;color:${done?'var(--accent)':'var(--text-3)'};font-family:'JetBrains Mono',monospace;">${done?'✓ logged':'· log yesterday'}</span>`}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.openChallenge = async function(id) {
+  state.activeChallengeId = id;
+  saveLocalState();
+  showLoading(true);
+  const c = await fetchChallenge(id);
+  showLoading(false);
+  if (!c) { alert('Challenge not found.'); return; }
+  renderDetail(c);
+  go('s-detail');
+};
+
+// ── Detail ────────────────────────────────────────────────────────
+function renderDetail(c) {
+  state.challengeCache = c;
+  const me = c.members.find(m=>m.name===state.me.name);
+  const sorted = [...c.members].sort((a,b)=>totalMinutes(a)-totalMinutes(b));
+  const myRank = sorted.findIndex(m=>m.name===state.me.name)+1;
+  const checkins = Object.keys(me?.checkins||{}).length;
+  const avg = checkins>0 ? Math.round(totalMinutes(me)/checkins) : 0;
+  const dl = daysLeft(c);
+
+  const isOver = getToday() > c.endDate;
+  const winner = sorted[0];
+
+  document.getElementById('detail-title').textContent = c.name;
+  document.getElementById('detail-winner-banner').innerHTML = isOver ? `
+    <div style="background:var(--amber-dim); border:2px solid rgba(240,168,48,0.25); border-radius:var(--r); padding:22px 18px; text-align:center; margin-bottom:20px;">
+      <div style="font-size:42px; margin-bottom:10px;">🏆</div>
+      <div style="font-size:21px; font-weight:800; color:var(--ink); margin-bottom:4px;">${winner.name} wins!</div>
+      <div style="font-size:13px; color:var(--ink-2); font-weight:500; margin-bottom:2px;">${totalMinutes(winner)} min total — least screen time</div>
+      <div style="font-size:12px; color:var(--ink-3); font-weight:600; margin-top:8px; text-transform:uppercase; letter-spacing:0.06em;">Challenge complete</div>
+    </div>` : '';
+
+  document.getElementById('detail-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-label">participants</div><div class="stat-val">${c.members.length}</div></div>
+    <div class="stat-card"><div class="stat-label">days left</div><div class="stat-val">${dl}</div></div>
+    <div class="stat-card"><div class="stat-label">your avg</div><div class="stat-val" style="color:var(--accent);">${avg}m</div></div>
+    <div class="stat-card"><div class="stat-label">your rank</div><div class="stat-val">${myRank}${rankSuffix(myRank)}</div></div>`;
+  document.getElementById('detail-stakes').innerHTML = c.stakes ?
+    `<div class="stakes-banner"><span style="font-size:18px;">☕</span><span>${c.stakes}</span></div>` : '';
+
+  const avCls=['av-gold','av-accent','av-muted','av-warn'];
+  const barCol=['#f0a830','#2aaa72','#8ab4bc','#e05c5c'];
+  const scCol=['var(--gold)','var(--text-2)','var(--text-3)','var(--warn)'];
+  const maxT=Math.max(...sorted.map(m=>totalMinutes(m)),1);
+
+  document.getElementById('detail-lb').innerHTML = sorted.map((m,i) => {
+    const isMe = m.name===state.me.name;
+    const t = totalMinutes(m);
+    const idx = Math.min(i,3);
+    const rankColor = i===0?'var(--gold)':i===sorted.length-1&&sorted.length>1?'var(--warn)':'var(--text-3)';
+    return `<div class="lb-row">
+      <div style="font-family:'JetBrains Mono',monospace; font-size:12px; color:${rankColor}; width:28px; flex-shrink:0; text-align:center; font-weight:600;">#${i+1}</div>
+      <div class="lb-avatar ${avCls[idx]}">${m.initials}</div>
+      <div class="lb-info">
+        <div class="lb-name">${m.name}${isMe?' <span style="font-size:11px;color:var(--text-3);font-weight:500;">(you)</span>':''}</div>
+        <div class="lb-bar"><div class="lb-bar-fill" style="width:${Math.round(t/maxT*100)}%;background:${barCol[idx]}"></div></div>
+        <div class="lb-sub">${t}m total · ${checkedInForYesterday(m)?'✓ logged':'not logged yet'}</div>
+      </div>
+      <div class="lb-score" style="color:${scCol[idx]}">${t}m</div>
+    </div>`;
+  }).join('');
+
+  const btn = document.getElementById('detail-checkin-btn');
+  const done = me && checkedInForYesterday(me);
+  if (isOver) {
+    btn.textContent = 'Challenge over';
+    btn.disabled = true;
+  } else {
+    btn.textContent = done ? '✓ Yesterday already logged' : 'Log yesterday\'s screen time';
+    btn.disabled = !!done;
+  }
+}
+
+// ── Check-in ──────────────────────────────────────────────────────
+window.updateCheckinFeedback = function() {
+  const c = state.challengeCache; if (!c) return;
+  const hoursEl = document.getElementById('checkin-hours');
+  const minsEl = document.getElementById('checkin-mins');
+  const feedback = document.getElementById('checkin-feedback');
+  const preview = document.getElementById('rank-preview');
+  if (hoursEl.value === '' && minsEl.value === '') {
+    feedback.textContent=''; preview.innerHTML='<span style="font-size:13px;color:var(--text-3);font-weight:500;">Enter your time above</span>'; return;
+  }
+  const val = (parseInt(hoursEl.value) || 0) * 60 + (parseInt(minsEl.value) || 0);
+  let msg='', color='var(--text-2)';
+  if (val===0) { msg='🏆 Zero minutes — legendary.'; color='var(--accent)'; }
+  else if (val<=c.goalMinutes*0.5) { msg='🔥 Way under goal. You\'re winning this.'; color='var(--accent)'; }
+  else if (val<=c.goalMinutes) { msg=`✅ Under the ${c.goalMinutes}m goal. Nice.`; color='var(--accent)'; }
+  else if (val<=c.goalMinutes*1.5) { msg=`⚠️ ${val-c.goalMinutes}m over goal — still recoverable.`; color='var(--gold)'; }
+  else { msg='🚨 Heavy day. The coffee is looking risky...'; color='var(--warn)'; }
+  feedback.style.color=color; feedback.textContent=msg;
+
+  const simSorted = [...c.members].map(m=>m.name===state.me.name?{...m,_t:totalMinutes(m)+val}:{...m,_t:totalMinutes(m)}).sort((a,b)=>a._t-b._t);
+  const rank = simSorted.findIndex(m=>m.name===state.me.name)+1;
+  const simMe = simSorted.find(m=>m.name===state.me.name);
+  preview.innerHTML = `<div style="display:flex;align-items:center;gap:10px;"><div class="lb-avatar av-accent">${state.me.initials}</div><div><div style="font-size:14px;font-weight:700;color:var(--text-1);">${state.me.name} · ${rank}${rankSuffix(rank)} place</div><div style="font-size:11px;color:var(--text-3);font-family:'JetBrains Mono',monospace;">${simMe._t}m total</div></div></div>`;
+};
+
+window.submitCheckin = async function() {
+  const c = state.challengeCache;
+  const hoursEl = document.getElementById('checkin-hours');
+  const minsEl = document.getElementById('checkin-mins');
+  const feedback = document.getElementById('checkin-feedback');
+  if (hoursEl.value === '' && minsEl.value === '') { feedback.style.color='var(--warn)'; feedback.textContent='Please enter your time.'; return; }
+  const val = (parseInt(hoursEl.value) || 0) * 60 + (parseInt(minsEl.value) || 0);
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled=true; btn.textContent='Saving...';
+
+  const memberIdx = c.members.findIndex(m=>m.name===state.me.name);
+  if (!c.members[memberIdx].checkins) c.members[memberIdx].checkins={};
+  c.members[memberIdx].checkins[getYesterday()] = val;
+
+  await saveChallenge(c);
+  btn.disabled=false; btn.textContent='Submit';
+
+  const sorted=[...c.members].sort((a,b)=>totalMinutes(a)-totalMinutes(b));
+  const rank=sorted.findIndex(m=>m.name===state.me.name)+1;
+  document.getElementById('submitted-sub').textContent=`${val} min today · you're in ${rank}${rankSuffix(rank)} place`;
+  buildWeekBars(c);
+  document.getElementById('checkin-hours').value='';
+  document.getElementById('checkin-mins').value='';
+  go('s-submitted');
+};
+
+function buildWeekBars(c) {
+  const me = c.members.find(m=>m.name===state.me.name);
+  const dayLabels=['M','T','W','T','F','S','S'];
+  const today=new Date(); const todayDow=(today.getDay()+6)%7;
+  const vals=dayLabels.map((_,i)=>{ const d=new Date(today); d.setDate(d.getDate()-(todayDow-i)); return me.checkins?.[d.toISOString().slice(0,10)]??null; });
+  const maxV=Math.max(...vals.filter(v=>v!==null),1);
+  document.getElementById('week-bars-sub').innerHTML=vals.map((v,i)=>{
+    if(v===null) return `<div class="week-bar" style="flex:1;background:var(--petrol-pale);height:20%;"></div>`;
+    const h=Math.max(12,Math.round(v/maxV*100));
+    return `<div class="week-bar" style="flex:1;background:${i===todayDow?'var(--accent)':'var(--navy-500)'};height:${h}%;"></div>`;
+  }).join('');
+  document.getElementById('week-days-sub').innerHTML=dayLabels.map((d,i)=>`<div class="week-day${i===todayDow?' today':''}">${d}</div>`).join('');
+}
+
+// ── Copy helpers ──────────────────────────────────────────────────
+window.copyInvite = function() {
+  const id = state.activeChallengeId;
+  navigator.clipboard.writeText(id).catch(()=>{});
+  const btn=document.getElementById('detail-copy-btn');
+  btn.textContent='Copied!'; setTimeout(()=>btn.textContent='Copy',2000);
+};
+window.copyCreatedCode = function() {
+  navigator.clipboard.writeText(state.createdChallengeId).catch(()=>{});
+  const btn=document.getElementById('created-copy-btn');
+  btn.textContent='Copied!'; setTimeout(()=>btn.textContent='Copy code',2000);
+};
+
+// ── Notifications ─────────────────────────────────────────────────
+let swReg = null;
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/Offeed/sw.js').then(r => { swReg = r; }).catch(() => {});
+}
+
+window.toggleNotifications = async function(enabled) {
+  const msg = document.getElementById('notif-msg');
+  if (!enabled) {
+    LS.set('notif_enabled', false);
+    if (swReg && 'periodicSync' in swReg) {
+      try { await swReg.periodicSync.unregister('offeed-reminder'); } catch(e) {}
+    }
+    msg.textContent = 'Reminders turned off.';
+    return;
+  }
+
+  if (!('Notification' in window)) {
+    msg.textContent = 'Your browser doesn\'t support notifications.';
+    document.getElementById('notif-toggle').checked = false;
+    return;
+  }
+
+  const permission = await Notification.requestPermission();
+  if (permission !== 'granted') {
+    msg.textContent = 'Permission denied — enable notifications in your browser settings.';
+    document.getElementById('notif-toggle').checked = false;
+    return;
+  }
+
+  LS.set('notif_enabled', true);
+
+  if (swReg && 'periodicSync' in swReg) {
+    try {
+      await swReg.periodicSync.register('offeed-reminder', { minInterval: 24 * 60 * 60 * 1000 });
+      msg.textContent = '✓ Daily reminders enabled!';
+    } catch(e) {
+      msg.textContent = '✓ Enabled — you\'ll be reminded when you open the app.';
+    }
+  } else {
+    msg.textContent = '✓ Enabled — you\'ll be reminded when you open the app.';
+  }
+};
+
+async function checkAndShowReminder() {
+  if (!LS.get('notif_enabled')) return;
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  const today = getToday();
+  if (LS.get('last_reminder') === today) return;
+  const now = new Date();
+  if (now.getHours() < 9) return;
+  LS.set('last_reminder', today);
+  const reg = swReg || await navigator.serviceWorker?.ready;
+  if (reg) reg.showNotification('Offeed 📵', {
+    body: "Don't forget to log yesterday's screen time! Don't let your friends catch up 👀",
+    tag: 'offeed-reminder',
+  });
+}
+
+// ── Profile ───────────────────────────────────────────────────────
+
+window.saveProfile = async function() {
+  const newName = document.getElementById('profile-name').value.trim();
+  if (!newName) { document.getElementById('profile-error').textContent = 'Please enter a name.'; return; }
+  if (newName === state.me.name) { go('s-account'); return; }
+
+  const oldName = state.me.name;
+  const newInitials = initials(newName);
+
+  // migrate localStorage challenges list to new name key
+  const oldIds = LS.get('sl_my_challenges_' + oldName) || [];
+  LS.set('sl_my_challenges_' + newName, oldIds);
+
+  // update name in all Firestore challenges
+  for (const id of oldIds) {
+    const c = await fetchChallenge(id);
+    if (!c) continue;
+    const m = c.members.find(m => m.name === oldName);
+    if (m) { m.name = newName; m.initials = newInitials; await saveChallenge(c); }
+  }
+
+  state.me = { name: newName, initials: newInitials };
+  saveLocalState();
+  loadMyChallenges();
+  go('s-account');
+};
+
+window.leaveChallenge = async function() {
+  if (!confirm('Leave this challenge? Your check-in history will be removed.')) return;
+  const c = state.challengeCache;
+  if (!c) return;
+  c.members = c.members.filter(m => m.name !== state.me.name);
+  await saveChallenge(c);
+  const key = 'sl_my_challenges_' + state.me.name;
+  LS.set(key, (LS.get(key) || []).filter(id => id !== c.id));
+  state.activeChallengeId = null;
+  saveLocalState();
+  await loadMyChallenges();
+  go('s-home');
+};
+
+function shareMsg(code) {
+  return `Hey! Join my Offeed challenge 📵\n\nWe're competing to use social media less — loser pays up 😄\n\n👉 Go to https://kata-boehm.github.io/Offeed/\nEnter code: ${code}`;
+}
+window.shareInviteDetail = function() {
+  navigator.clipboard.writeText(shareMsg(state.activeChallengeId)).catch(()=>{});
+  const btn=document.getElementById('detail-share-btn');
+  btn.textContent='Copied!'; setTimeout(()=>btn.textContent='Share invite 📋',2000);
+};
+window.shareInviteCreated = function() {
+  navigator.clipboard.writeText(shareMsg(state.createdChallengeId)).catch(()=>{});
+  const btn=document.getElementById('created-share-btn');
+  btn.textContent='Copied!'; setTimeout(()=>btn.textContent='Share invite 📋',2000);
+};
+
+// ── Track which challenges the user belongs to ─────────────────────
+const _origCreate = window.createChallenge;
+window.createChallenge = async function() {
+  await _origCreate();
+  if (state.createdChallengeId) {
+    const key = 'sl_my_challenges_'+state.me.name;
+    const ids = LS.get(key)||[];
+    if (!ids.includes(state.createdChallengeId)) { ids.push(state.createdChallengeId); LS.set(key,ids); }
+  }
+};
+const _origJoin = window.joinChallenge;
+window.joinChallenge = async function() {
+  const code = document.getElementById('join-code').value.trim().toUpperCase();
+  await _origJoin();
+  if (state.activeChallengeId) {
+    const key = 'sl_my_challenges_'+(state.me?.name||document.getElementById('join-name').value.trim());
+    const ids = LS.get(key)||[];
+    if (!ids.includes(code)) { ids.push(code); LS.set(key,ids); }
+  }
+};
+
+</script>
+</body>
+</html>
