@@ -107,9 +107,9 @@ html, body {
 .back-btn {
   background: rgba(255,255,255,0.15);
   border: none;
-  border-radius: 10px; width: 34px; height: 34px;
+  border-radius: 10px; width: 36px; height: 36px;
   display: flex; align-items: center; justify-content: center;
-  cursor: pointer; color: #fff; font-size: 20px;
+  cursor: pointer; color: #fff; font-size: 22px; font-weight: 700; line-height: 1;
   transition: background 0.15s; flex-shrink: 0;
 }
 .back-btn:hover { background: rgba(255,255,255,0.25); }
@@ -167,7 +167,7 @@ select.input-field option { background: var(--paper); color: var(--ink); }
   font-family: 'Nunito', sans-serif;
   font-size: 56px; font-weight: 800;
   color: var(--petrol);
-  width: 150px;
+  width: 80px;
   -moz-appearance: textfield;
 }
 .big-input::-webkit-inner-spin-button, .big-input::-webkit-outer-spin-button { -webkit-appearance: none; }
@@ -379,10 +379,16 @@ select.input-field option { background: var(--paper); color: var(--ink); }
   <div class="body">
     <div style="font-size:14px; color:var(--ink-2); margin-bottom:6px; line-height:1.7; font-weight:500;">How many minutes on social media <span style="color:var(--ink); font-weight:700;">yesterday</span>?</div>
     <div style="font-size:12px; color:var(--ink-3); margin-bottom:24px; font-family:'JetBrains Mono',monospace; line-height:1.7;">iOS: Screen Time → yesterday. Android: Digital Wellbeing → yesterday.</div>
-    <div class="input-label">Total minutes yesterday</div>
-    <div class="big-input-wrap">
-      <input class="big-input" type="number" id="checkin-input" min="0" max="999" placeholder="0" oninput="updateCheckinFeedback()">
-      <span class="big-unit">min</span>
+    <div class="input-label">Time on social media yesterday</div>
+    <div style="display:flex; gap:12px; margin-bottom:16px;">
+      <div class="big-input-wrap" style="flex:1; margin-bottom:0;">
+        <input class="big-input" type="number" id="checkin-hours" min="0" max="23" placeholder="0" oninput="updateCheckinFeedback()">
+        <span class="big-unit">h</span>
+      </div>
+      <div class="big-input-wrap" style="flex:1; margin-bottom:0;">
+        <input class="big-input" type="number" id="checkin-mins" min="0" max="59" placeholder="0" oninput="updateCheckinFeedback()">
+        <span class="big-unit">min</span>
+      </div>
     </div>
     <div id="checkin-feedback" style="font-size:14px; min-height:44px; margin-bottom:20px; line-height:1.7; color:var(--ink-2); transition:color 0.2s; font-weight:600;"></div>
     <div class="divider"></div>
@@ -732,10 +738,14 @@ function renderDetail(c) {
 // ── Check-in ──────────────────────────────────────────────────────
 window.updateCheckinFeedback = function() {
   const c = state.challengeCache; if (!c) return;
-  const val = parseInt(document.getElementById('checkin-input').value);
+  const hoursEl = document.getElementById('checkin-hours');
+  const minsEl = document.getElementById('checkin-mins');
   const feedback = document.getElementById('checkin-feedback');
   const preview = document.getElementById('rank-preview');
-  if (isNaN(val)) { feedback.textContent=''; preview.innerHTML='<span style="font-size:13px;color:var(--text-3);font-weight:500;">Enter minutes above</span>'; return; }
+  if (hoursEl.value === '' && minsEl.value === '') {
+    feedback.textContent=''; preview.innerHTML='<span style="font-size:13px;color:var(--text-3);font-weight:500;">Enter your time above</span>'; return;
+  }
+  const val = (parseInt(hoursEl.value) || 0) * 60 + (parseInt(minsEl.value) || 0);
   let msg='', color='var(--text-2)';
   if (val===0) { msg='🏆 Zero minutes — legendary.'; color='var(--accent)'; }
   else if (val<=c.goalMinutes*0.5) { msg='🔥 Way under goal. You\'re winning this.'; color='var(--accent)'; }
@@ -752,9 +762,11 @@ window.updateCheckinFeedback = function() {
 
 window.submitCheckin = async function() {
   const c = state.challengeCache;
-  const val = parseInt(document.getElementById('checkin-input').value);
+  const hoursEl = document.getElementById('checkin-hours');
+  const minsEl = document.getElementById('checkin-mins');
   const feedback = document.getElementById('checkin-feedback');
-  if (isNaN(val)||val<0) { feedback.style.color='var(--warn)'; feedback.textContent='Please enter a valid number.'; return; }
+  if (hoursEl.value === '' && minsEl.value === '') { feedback.style.color='var(--warn)'; feedback.textContent='Please enter your time.'; return; }
+  const val = (parseInt(hoursEl.value) || 0) * 60 + (parseInt(minsEl.value) || 0);
 
   const btn = document.getElementById('submit-btn');
   btn.disabled=true; btn.textContent='Saving...';
@@ -770,7 +782,8 @@ window.submitCheckin = async function() {
   const rank=sorted.findIndex(m=>m.name===state.me.name)+1;
   document.getElementById('submitted-sub').textContent=`${val} min today · you're in ${rank}${rankSuffix(rank)} place`;
   buildWeekBars(c);
-  document.getElementById('checkin-input').value='';
+  document.getElementById('checkin-hours').value='';
+  document.getElementById('checkin-mins').value='';
   go('s-submitted');
 };
 
