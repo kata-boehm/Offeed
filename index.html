@@ -371,8 +371,8 @@ select.input-field option { background: var(--paper); color: var(--ink); }
     <div class="card" style="padding:4px 18px 6px;" id="detail-lb"></div>
     <div class="section-label">Invite friends</div>
     <div style="display:flex; gap:8px; margin-bottom:20px;">
-      <button class="btn btn-primary" id="detail-share-btn" onclick="shareInviteDetail()" style="flex:1;">Share invite 📋</button>
-      <button class="btn btn-ghost" id="detail-copy-code-btn" onclick="copyCodeDetail()" style="flex:1;">Copy code</button>
+      <button class="btn btn-primary" id="detail-share-btn" onclick="shareInviteDetail()" style="flex:1; white-space:nowrap;">Share invite 📋</button>
+      <button class="btn btn-ghost" id="detail-copy-code-btn" onclick="copyCodeDetail()" style="flex:1; white-space:nowrap; font-family:'JetBrains Mono',monospace; letter-spacing:0.05em;">Copy code</button>
     </div>
     <div class="divider"></div>
     <button class="btn btn-ghost" onclick="leaveChallenge()" style="margin-top:12px; color:var(--red); border-color:rgba(224,92,92,0.3);">Leave challenge</button>
@@ -494,8 +494,8 @@ select.input-field option { background: var(--paper); color: var(--ink); }
     <div style="font-size:22px; font-weight:800; margin-bottom:6px; color:var(--ink);" id="created-chal-name"></div>
     <div style="font-size:14px; color:var(--ink-2); margin-bottom:28px; line-height:1.7; max-width:260px; font-weight:500;">Share this code with your friends. They open this page and enter it to join — from any device, anywhere.</div>
     <div style="display:flex; gap:8px; margin-bottom:16px; width:100%;">
-      <button class="btn btn-primary" id="created-share-btn" onclick="shareInviteCreated()" style="flex:1;">Share invite 📋</button>
-      <button class="btn btn-ghost" id="created-copy-code-btn" onclick="copyCodeCreated()" style="flex:1;">Copy code</button>
+      <button class="btn btn-primary" id="created-share-btn" onclick="shareInviteCreated()" style="flex:1; white-space:nowrap;">Share invite 📋</button>
+      <button class="btn btn-ghost" id="created-copy-code-btn" onclick="copyCodeCreated()" style="flex:1; white-space:nowrap; font-family:'JetBrains Mono',monospace; letter-spacing:0.05em;">Copy code</button>
     </div>
     <button class="btn btn-ghost" style="width:100%;" onclick="openChallenge(state.createdChallengeId)">Go to challenge ›</button>
   </div>
@@ -743,6 +743,7 @@ window.createChallenge = async function() {
   btn.disabled=false; btn.textContent='Create & get invite code ›';
 
   document.getElementById('created-chal-name').textContent = name;
+  document.getElementById('created-copy-code-btn').textContent = id + ' 📋';
   go('s-created');
 };
 
@@ -802,6 +803,8 @@ window.openChallenge = async function(id) {
 // ── Detail ────────────────────────────────────────────────────────
 function renderDetail(c) {
   state.challengeCache = c;
+  const ccBtn = document.getElementById('detail-copy-code-btn');
+  if (ccBtn) ccBtn.textContent = c.id + ' 📋';
   const isPersonal = c.type === 'personal';
   const me = c.members.find(m=>m.name===state.me.name);
   const dl = daysLeft(c);
@@ -1120,14 +1123,16 @@ function shareMsg(code) {
   return `Hey! Join my Offeed challenge 📵\n\nWe're competing to use social media less — loser pays up 😄\n\n👉 Go to https://kata-boehm.github.io/Offeed/\nEnter code: ${code}`;
 }
 window.copyCodeDetail = function() {
-  navigator.clipboard.writeText(state.activeChallengeId).catch(()=>{});
+  const code = state.activeChallengeId;
+  navigator.clipboard.writeText(code).catch(()=>{});
   const btn = document.getElementById('detail-copy-code-btn');
-  btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy code', 2000);
+  btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = code + ' 📋', 2000);
 };
 window.copyCodeCreated = function() {
-  navigator.clipboard.writeText(state.createdChallengeId).catch(()=>{});
+  const code = state.createdChallengeId;
+  navigator.clipboard.writeText(code).catch(()=>{});
   const btn = document.getElementById('created-copy-code-btn');
-  btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy code', 2000);
+  btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = code + ' 📋', 2000);
 };
 window.shareInviteDetail = function() {
   navigator.clipboard.writeText(shareMsg(state.activeChallengeId)).catch(()=>{});
