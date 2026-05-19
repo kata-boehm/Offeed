@@ -463,15 +463,15 @@ select.input-field option { background: var(--paper); color: var(--ink); }
       </div>
     </div>
     <div class="input-label">Duration</div>
-    <div class="duration-grid">
-      <button type="button" class="dur-btn" data-days="3" onclick="selectDuration(this)">3 days</button>
-      <button type="button" class="dur-btn" data-days="5" onclick="selectDuration(this)">5 days</button>
-      <button type="button" class="dur-btn active" data-days="7" onclick="selectDuration(this)">1 week</button>
-      <button type="button" class="dur-btn" data-days="14" onclick="selectDuration(this)">2 weeks</button>
-      <button type="button" class="dur-btn" data-days="21" onclick="selectDuration(this)">3 weeks</button>
-      <button type="button" class="dur-btn" data-days="30" onclick="selectDuration(this)">1 month</button>
-      <button type="button" class="dur-btn" data-days="60" onclick="selectDuration(this)">2 months</button>
-      <button type="button" class="dur-btn" data-days="90" onclick="selectDuration(this)">3 months</button>
+    <div style="display:flex; gap:12px; margin-bottom:16px;">
+      <div class="big-input-wrap" style="flex:1; margin-bottom:0; padding:14px 16px;">
+        <input class="big-input" type="number" id="new-dur-weeks" min="0" max="52" placeholder="0" oninput="if(+this.value>52)this.value=52; if(this.value!==''&&+this.value<0)this.value=0; updateDuration();" style="font-size:36px; width:60px;">
+        <span class="big-unit">wk</span>
+      </div>
+      <div class="big-input-wrap" style="flex:1; margin-bottom:0; padding:14px 16px;">
+        <input class="big-input" type="number" id="new-dur-days" min="1" max="90" placeholder="7" oninput="if(+this.value>90)this.value=90; if(this.value!==''&&+this.value<0)this.value=0; updateDuration();" style="font-size:36px; width:60px;">
+        <span class="big-unit">d</span>
+      </div>
     </div>
     <input type="hidden" id="new-duration" value="7">
     <div class="input-label">Stakes (loser pays)</div>
@@ -585,11 +585,9 @@ function go(id) {
   }
   // Screen-specific init
   if (id === 's-new') {
-    document.querySelectorAll('.dur-btn').forEach(b => b.classList.remove('active'));
-    const def = document.querySelector('.dur-btn[data-days="7"]');
-    if (def) def.classList.add('active');
     const nd = document.getElementById('new-duration'); if (nd) nd.value = '7';
-    ['new-goal-hours','new-goal-mins','new-name','new-stakes'].forEach(i => { const el=document.getElementById(i); if(el) el.value=''; });
+    ['new-goal-hours','new-goal-mins','new-name','new-stakes','new-dur-weeks'].forEach(i => { const el=document.getElementById(i); if(el) el.value=''; });
+    const ddays = document.getElementById('new-dur-days'); if (ddays) ddays.value = '7';
     const ne = document.getElementById('new-error'); if (ne) ne.textContent = '';
     const nt = document.getElementById('new-type'); if (nt) nt.value = 'shared';
     const gs = document.getElementById('goal-section'); if (gs) gs.style.display = 'block';
@@ -668,10 +666,10 @@ window.joinChallenge = async function() {
 };
 
 // ── Create ────────────────────────────────────────────────────────
-window.selectDuration = function(btn) {
-  document.querySelectorAll('.dur-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('new-duration').value = btn.dataset.days;
+window.updateDuration = function() {
+  const w = parseInt(document.getElementById('new-dur-weeks').value) || 0;
+  const d = parseInt(document.getElementById('new-dur-days').value) || 0;
+  document.getElementById('new-duration').value = w * 7 + d;
 };
 
 window.selectType = function(type) {
@@ -713,6 +711,7 @@ window.createChallenge = async function() {
   setErr('new-error','');
   if (!name) { setErr('new-error','Please enter a name.'); return; }
   if (type === 'shared' && (!goal||goal<1)) { setErr('new-error','Please set a daily limit.'); return; }
+  if (!duration || duration < 1) { setErr('new-error','Please set a duration of at least 1 day.'); return; }
   if (!stakes) { setErr('new-error','Add stakes — it makes it fun!'); return; }
 
   const btn = document.getElementById('create-btn');
