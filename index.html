@@ -279,6 +279,8 @@ select.input-field option { background: var(--paper); color: var(--ink); }
 .week-days { display: flex; gap: 5px; }
 .week-day { flex: 1; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--ink-3); }
 .week-day.today { color: var(--petrol); font-weight: 700; }
+.toast { position: fixed; bottom: 88px; left: 50%; transform: translateX(-50%) translateY(12px); background: var(--petrol); color: #fff; padding: 11px 22px; border-radius: 24px; font-size: 14px; font-weight: 700; font-family: 'Nunito', sans-serif; opacity: 0; transition: opacity 0.2s, transform 0.2s; pointer-events: none; z-index: 999; white-space: nowrap; box-shadow: 0 4px 16px var(--petrol-glow); }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 </style>
 </head>
 <body>
@@ -368,8 +370,10 @@ select.input-field option { background: var(--paper); color: var(--ink); }
     <div class="section-label">Leaderboard</div>
     <div class="card" style="padding:4px 18px 6px;" id="detail-lb"></div>
     <div class="section-label">Invite friends</div>
-    <button class="btn btn-primary" id="detail-share-btn" onclick="shareInviteDetail()" style="margin-bottom:8px;">Share invite 📋</button>
-    <div style="font-size:11px; color:var(--ink-3); font-family:'JetBrains Mono',monospace; margin-bottom:20px; letter-spacing:0.02em;">Copies a ready-to-send message with the link + code</div>
+    <div style="display:flex; gap:8px; margin-bottom:20px;">
+      <button class="btn btn-primary" id="detail-share-btn" onclick="shareInviteDetail()" style="flex:1;">Share invite 📋</button>
+      <button class="btn btn-ghost" id="detail-copy-code-btn" onclick="copyCodeDetail()" style="flex:1;">Copy code</button>
+    </div>
     <div class="divider"></div>
     <button class="btn btn-ghost" onclick="leaveChallenge()" style="margin-top:12px; color:var(--red); border-color:rgba(224,92,92,0.3);">Leave challenge</button>
   </div>
@@ -489,8 +493,10 @@ select.input-field option { background: var(--paper); color: var(--ink); }
     <div style="font-size:48px; margin-bottom:16px;">🎉</div>
     <div style="font-size:22px; font-weight:800; margin-bottom:6px; color:var(--ink);" id="created-chal-name"></div>
     <div style="font-size:14px; color:var(--ink-2); margin-bottom:28px; line-height:1.7; max-width:260px; font-weight:500;">Share this code with your friends. They open this page and enter it to join — from any device, anywhere.</div>
-    <button class="btn btn-primary" id="created-share-btn" onclick="shareInviteCreated()" style="width:100%; margin-bottom:10px;">Share invite 📋</button>
-    <div style="font-size:11px; color:var(--ink-3); font-family:'JetBrains Mono',monospace; margin-bottom:16px;">Copies a ready-to-send message with the link + code</div>
+    <div style="display:flex; gap:8px; margin-bottom:16px; width:100%;">
+      <button class="btn btn-primary" id="created-share-btn" onclick="shareInviteCreated()" style="flex:1;">Share invite 📋</button>
+      <button class="btn btn-ghost" id="created-copy-code-btn" onclick="copyCodeCreated()" style="flex:1;">Copy code</button>
+    </div>
     <button class="btn btn-ghost" style="width:100%;" onclick="openChallenge(state.createdChallengeId)">Go to challenge ›</button>
   </div>
 </div>
@@ -505,9 +511,9 @@ select.input-field option { background: var(--paper); color: var(--ink); }
   </div>
   <div class="body">
     <div class="input-label">Your name</div>
-    <input class="input-field" type="text" id="profile-name" placeholder="e.g. Kata" maxlength="20" onkeydown="if(event.key==='Enter')saveProfile()">
+    <input class="input-field" type="text" id="profile-name" placeholder="e.g. Kata" maxlength="20" onkeydown="if(event.key==='Enter')saveProfile()" oninput="onProfileNameInput()">
     <div id="profile-error" class="error-msg"></div>
-    <button class="btn btn-primary" onclick="saveProfile()">Save changes</button>
+    <button class="btn btn-primary" id="save-profile-btn" onclick="saveProfile()" disabled>Save changes</button>
 
     <div class="section-label" style="margin-top:28px;">Notifications</div>
     <div class="card" style="display:flex; align-items:center; gap:14px; margin-bottom:8px;">
@@ -596,6 +602,7 @@ function go(id) {
   if (id === 's-account') {
     const pn = document.getElementById('profile-name'); if (pn) pn.value = window.state?.me?.name || '';
     const pe = document.getElementById('profile-error'); if (pe) pe.textContent = '';
+    const sb = document.getElementById('save-profile-btn'); if (sb) sb.disabled = true;
     const nt = document.getElementById('notif-toggle'); if (nt) nt.checked = !!(localStorage.getItem('notif_enabled') && Notification.permission === 'granted');
     const nm = document.getElementById('notif-msg'); if (nm) nm.textContent = '';
   }
@@ -1053,6 +1060,21 @@ async function checkAndShowReminder() {
 
 // ── Profile ───────────────────────────────────────────────────────
 
+function showToast(msg) {
+  let t = document.getElementById('app-toast');
+  if (!t) { t = document.createElement('div'); t.id = 'app-toast'; t.className = 'toast'; document.body.appendChild(t); }
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._hide);
+  t._hide = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+window.onProfileNameInput = function() {
+  const val = document.getElementById('profile-name').value.trim();
+  const btn = document.getElementById('save-profile-btn');
+  btn.disabled = !val || val === state.me.name;
+};
+
 window.saveProfile = async function() {
   const newName = document.getElementById('profile-name').value.trim();
   if (!newName) { document.getElementById('profile-error').textContent = 'Please enter a name.'; return; }
@@ -1077,6 +1099,7 @@ window.saveProfile = async function() {
   saveLocalState();
   loadMyChallenges();
   go('s-account');
+  showToast('New name, who dis? 😏');
 };
 
 window.leaveChallenge = async function() {
@@ -1096,6 +1119,16 @@ window.leaveChallenge = async function() {
 function shareMsg(code) {
   return `Hey! Join my Offeed challenge 📵\n\nWe're competing to use social media less — loser pays up 😄\n\n👉 Go to https://kata-boehm.github.io/Offeed/\nEnter code: ${code}`;
 }
+window.copyCodeDetail = function() {
+  navigator.clipboard.writeText(state.activeChallengeId).catch(()=>{});
+  const btn = document.getElementById('detail-copy-code-btn');
+  btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy code', 2000);
+};
+window.copyCodeCreated = function() {
+  navigator.clipboard.writeText(state.createdChallengeId).catch(()=>{});
+  const btn = document.getElementById('created-copy-code-btn');
+  btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy code', 2000);
+};
 window.shareInviteDetail = function() {
   navigator.clipboard.writeText(shareMsg(state.activeChallengeId)).catch(()=>{});
   const btn=document.getElementById('detail-share-btn');
