@@ -934,12 +934,23 @@ window.updateCheckinFeedback = function() {
     feedback.textContent=''; preview.innerHTML='<span style="font-size:13px;color:var(--text-3);font-weight:500;">Enter your time above</span>'; return;
   }
   const val = (parseInt(hoursEl.value) || 0) * 60 + (parseInt(minsEl.value) || 0);
+  const me = c.members.find(m => m.name === state.me.name);
   let msg='', color='var(--text-2)';
-  if (val===0) { msg='🏆 Zero minutes — legendary.'; color='var(--accent)'; }
-  else if (val<=c.goalMinutes*0.5) { msg='🔥 Way under goal. You\'re winning this.'; color='var(--accent)'; }
-  else if (val<=c.goalMinutes) { msg=`✅ Under the ${c.goalMinutes}m goal. Nice.`; color='var(--accent)'; }
-  else if (val<=c.goalMinutes*1.5) { msg=`⚠️ ${val-c.goalMinutes}m over goal — still recoverable.`; color='var(--gold)'; }
-  else { msg='🚨 Heavy day. The stakes are looking real...'; color='var(--warn)'; }
+  if (val === 0) { msg='🏆 Zero minutes — legendary.'; color='var(--accent)'; }
+  else if (c.type === 'personal') {
+    const base = me?.baselineMinutes;
+    if (!base) { msg='📊 Log your starting point first to see feedback.'; }
+    else if (val <= base * 0.5) { msg='🔥 Less than half your usual — crushing it.'; color='var(--accent)'; }
+    else if (val <= base * 0.8) { msg='✅ Well below your average. Nice work.'; color='var(--accent)'; }
+    else if (val <= base) { msg='👍 Just under your average. Keep going.'; color='var(--accent)'; }
+    else if (val <= base * 1.2) { msg='⚠️ Slightly above your average.'; color='var(--gold)'; }
+    else { msg='🚨 Above your usual. The stakes are looking real...'; color='var(--warn)'; }
+  } else {
+    if (val<=c.goalMinutes*0.5) { msg='🔥 Way under goal. You\'re winning this.'; color='var(--accent)'; }
+    else if (val<=c.goalMinutes) { msg=`✅ Under the ${c.goalMinutes}m goal. Nice.`; color='var(--accent)'; }
+    else if (val<=c.goalMinutes*1.5) { msg=`⚠️ ${val-c.goalMinutes}m over goal — still recoverable.`; color='var(--gold)'; }
+    else { msg='🚨 Heavy day. The stakes are looking real...'; color='var(--warn)'; }
+  }
   feedback.style.color=color; feedback.textContent=msg;
 
   const simSorted = [...c.members].map(m=>m.name===state.me.name?{...m,_t:totalMinutes(m)+val}:{...m,_t:totalMinutes(m)}).sort((a,b)=>a._t-b._t);
