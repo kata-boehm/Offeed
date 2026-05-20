@@ -865,7 +865,7 @@ function renderDetail(c) {
     <div class="stat-card"><div class="stat-label">participants</div><div class="stat-val">${c.members.length}</div></div>
     <div class="stat-card"><div class="stat-label">days left</div><div class="stat-val">${dl}</div></div>
     ${isPersonal
-      ? `<div class="stat-card"><div class="stat-label">your change</div><div class="stat-val" style="color:${myPct !== null && myPct < 0 ? 'var(--warn)' : 'var(--accent)'};">${myPct !== null ? myPct+'%' : '—'}</div></div>`
+      ? `<div class="stat-card"><div class="stat-label">${myPct === null ? 'reduction' : myPct > 0 ? 'reduction' : myPct < 0 ? 'above avg' : 'no change'}</div><div class="stat-val" style="color:${myPct !== null && myPct < 0 ? 'var(--warn)' : 'var(--accent)'};">${myPct !== null ? Math.abs(myPct)+'%' : '—'}</div></div>`
       : `<div class="stat-card"><div class="stat-label">your avg</div><div class="stat-val" style="color:var(--accent);">${avg}m</div></div>`}
     <div class="stat-card"><div class="stat-label">your rank</div><div class="stat-val">${myRank}${rankSuffix(myRank)}</div></div>`;
 
