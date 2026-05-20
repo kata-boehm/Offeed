@@ -389,6 +389,22 @@ select.input-field option { background: var(--paper); color: var(--ink); }
     </div>
   </div>
   <div class="body">
+    <div id="checkin-baseline-section" style="display:none;">
+      <div class="input-label">Your usual daily social media time</div>
+      <div style="font-size:13px; color:var(--ink-3); margin-bottom:12px; font-weight:500;">We'll use this as your benchmark to track reduction.</div>
+      <div style="display:flex; gap:12px; margin-bottom:6px;">
+        <div class="big-input-wrap" style="flex:1; margin-bottom:0;">
+          <input class="big-input" type="number" id="checkin-baseline-hours" min="0" max="24" placeholder="0" oninput="if(+this.value>24)this.value=24;">
+          <span class="big-unit">h</span>
+        </div>
+        <div class="big-input-wrap" style="flex:1; margin-bottom:0;">
+          <input class="big-input" type="number" id="checkin-baseline-mins" min="0" max="60" placeholder="0" oninput="if(+this.value>60)this.value=60;">
+          <span class="big-unit">min</span>
+        </div>
+      </div>
+      <div id="checkin-baseline-error" style="font-size:12px; color:var(--red); font-weight:600; min-height:16px; margin-bottom:16px;"></div>
+      <div class="divider" style="margin-bottom:20px;"></div>
+    </div>
     <div style="font-size:14px; color:var(--ink-2); margin-bottom:6px; line-height:1.7; font-weight:500;">How many minutes on social media <span style="color:var(--ink); font-weight:700;">yesterday</span>?</div>
     <div style="font-size:12px; color:var(--ink-3); margin-bottom:24px; font-family:'JetBrains Mono',monospace; line-height:1.9;">iOS: Screen Time → yesterday.<br>Android: Digital Wellbeing → yesterday.</div>
     <div class="input-label">Time on social media yesterday</div>
@@ -598,6 +614,16 @@ function go(id) {
     const nt = document.getElementById('new-type'); if (nt) nt.value = 'shared';
     const gs = document.getElementById('goal-section'); if (gs) gs.style.display = 'block';
     ['type-btn-shared','type-btn-personal'].forEach(i => { const el=document.getElementById(i); if(el) el.classList.toggle('active', i==='type-btn-shared'); });
+  }
+  if (id === 's-checkin') {
+    const c = state.challengeCache;
+    const me = c?.members?.find(m => m.name === state.me?.name);
+    const needsBaseline = c?.type === 'personal' && !me?.baselineMinutes;
+    const section = document.getElementById('checkin-baseline-section');
+    if (section) section.style.display = needsBaseline ? 'block' : 'none';
+    const bErr = document.getElementById('checkin-baseline-error'); if (bErr) bErr.textContent = '';
+    const bh = document.getElementById('checkin-baseline-hours'); if (bh) bh.value = '';
+    const bm = document.getElementById('checkin-baseline-mins'); if (bm) bm.value = '';
   }
   if (id === 's-account') {
     const pn = document.getElementById('profile-name'); if (pn) pn.value = window.state?.me?.name || '';
@@ -967,12 +993,26 @@ window.submitCheckin = async function() {
   if (hoursEl.value === '' && minsEl.value === '') { feedback.style.color='var(--warn)'; feedback.textContent='Please enter your time.'; return; }
   const val = (parseInt(hoursEl.value) || 0) * 60 + (parseInt(minsEl.value) || 0);
 
+  // Validate baseline if it's shown
+  const baselineSection = document.getElementById('checkin-baseline-section');
+  const needsBaseline = baselineSection && baselineSection.style.display !== 'none';
+  let baseline = 0;
+  if (needsBaseline) {
+    baseline = (parseInt(document.getElementById('checkin-baseline-hours').value) || 0) * 60
+             + (parseInt(document.getElementById('checkin-baseline-mins').value) || 0);
+    if (!baseline) {
+      document.getElementById('checkin-baseline-error').textContent = 'Please enter your usual daily time.';
+      return;
+    }
+  }
+
   const btn = document.getElementById('submit-btn');
   btn.disabled=true; btn.textContent='Saving...';
 
   const memberIdx = c.members.findIndex(m=>m.name===state.me.name);
   if (!c.members[memberIdx].checkins) c.members[memberIdx].checkins={};
   c.members[memberIdx].checkins[getYesterday()] = val;
+  if (needsBaseline && baseline) c.members[memberIdx].baselineMinutes = baseline;
 
   await saveChallenge(c);
   btn.disabled=false; btn.textContent='Submit';
