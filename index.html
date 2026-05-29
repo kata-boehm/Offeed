@@ -412,10 +412,7 @@ select.input-field option { background: var(--paper); color: var(--ink); }
         <button type="button" class="dur-btn" id="day-btn-1" onclick="selectCheckinDay(1)" style="flex:1;">—</button>
       </div>
     </div>
-    <div style="display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:16px;">
-      <div style="font-size:14px; color:var(--ink-2); line-height:1.7; font-weight:500;">How many minutes on social media <span id="checkin-day-label" style="color:var(--ink); font-weight:700;">yesterday</span>?</div>
-      <button onclick="openScreenTime()" id="open-screen-time-btn" style="background:none; border:none; cursor:pointer; font-size:12px; color:var(--petrol); font-weight:700; white-space:nowrap; padding:0; flex-shrink:0; text-decoration:underline; text-underline-offset:2px;">Open ↗</button>
-    </div>
+    <div style="font-size:14px; color:var(--ink-2); margin-bottom:16px; line-height:1.7; font-weight:500;">How many minutes on social media <span id="checkin-day-label" style="color:var(--ink); font-weight:700;">yesterday</span>?</div>
     <div class="input-label" id="checkin-input-label">Time on social media yesterday</div>
     <div style="display:flex; gap:12px; margin-bottom:16px;">
       <div class="big-input-wrap" style="flex:1; margin-bottom:0;">
@@ -548,14 +545,6 @@ select.input-field option { background: var(--paper); color: var(--ink); }
     </div>
     <div id="notif-msg" style="font-size:12px; color:var(--ink-3); font-weight:500; min-height:18px; padding:0 2px;"></div>
 
-    <div class="section-label" style="margin-top:28px;">Screen time</div>
-    <div class="card" style="display:flex; align-items:center; gap:14px;">
-      <div style="flex:1;">
-        <div style="font-size:14px; font-weight:700; color:var(--ink);" id="screen-time-settings-name">Screen Time</div>
-        <div style="font-size:12px; color:var(--ink-3); margin-top:2px; font-weight:500;" id="screen-time-settings-hint">Jump to your phone's screen time stats</div>
-      </div>
-      <button class="btn btn-ghost" onclick="openScreenTime()" style="width:auto; padding:8px 14px; font-size:13px; flex-shrink:0; margin-top:0;">Open ↗</button>
-    </div>
   </div>
 </div>
 
@@ -603,7 +592,7 @@ function getDayBefore() { const d=new Date(); d.setDate(d.getDate()-2); return d
 function getDayLabel(dateStr) {
   const names=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   const diff=Math.round((new Date(getToday()+'T12:00:00')-new Date(dateStr+'T12:00:00'))/86400000);
-  if(diff===1) return 'yesterday'; if(diff===2) return 'the day before';
+  if(diff===1) return 'yesterday'; if(diff===2) return '2 days ago';
   return names[new Date(dateStr+'T12:00:00').getDay()].toLowerCase();
 }
 function getUnloggedDays(member, c) {
@@ -648,7 +637,6 @@ function go(id) {
     const bErr = document.getElementById('checkin-baseline-error'); if (bErr) bErr.textContent = '';
     const bh = document.getElementById('checkin-baseline-hours'); if (bh) bh.value = '';
     const bm = document.getElementById('checkin-baseline-mins'); if (bm) bm.value = '';
-    const stBtn = document.getElementById('open-screen-time-btn'); if (stBtn) stBtn.textContent = getScreenTimeInfo().label;
     // Day selector
     const unlogged = getUnloggedDays(me, c);
     state.checkinDate = unlogged[0] || getYesterday();
@@ -663,7 +651,7 @@ function go(id) {
       }
     }
     const lbl = getDayLabel(state.checkinDate);
-    const title = document.getElementById('checkin-title'); if (title) title.textContent = lbl.charAt(0).toUpperCase()+lbl.slice(1)+"'s check-in";
+    const title = document.getElementById('checkin-title'); if (title) title.textContent = lbl==='2 days ago'?'Check-in — 2 days ago':lbl.charAt(0).toUpperCase()+lbl.slice(1)+"'s check-in";
     const dayLbl = document.getElementById('checkin-day-label'); if (dayLbl) dayLbl.textContent = lbl;
     const inputLbl = document.getElementById('checkin-input-label'); if (inputLbl) inputLbl.textContent = 'Time on social media '+lbl;
     const cfb = document.getElementById('checkin-feedback'); if (cfb) cfb.textContent = '';
@@ -676,9 +664,6 @@ function go(id) {
     const sb = document.getElementById('save-profile-btn'); if (sb) sb.disabled = true;
     const nt = document.getElementById('notif-toggle'); if (nt) nt.checked = !!(localStorage.getItem('notif_enabled') && Notification.permission === 'granted');
     const nm = document.getElementById('notif-msg'); if (nm) nm.textContent = '';
-    const stInfo = getScreenTimeInfo();
-    const stn = document.getElementById('screen-time-settings-name'); if (stn) stn.textContent = stInfo.name;
-    const sth = document.getElementById('screen-time-settings-hint'); if (sth) sth.textContent = stInfo.hint;
   }
 }
 window.go = go;
@@ -1268,24 +1253,6 @@ window.selectCheckinDay = function(idx) {
   const cm = document.getElementById('checkin-mins'); if (cm) cm.value = '';
 };
 
-// ── Screen time deep link ──────────────────────────────────────────
-function getScreenTimeInfo() {
-  if (/android/i.test(navigator.userAgent)) {
-    return {
-      name: 'Digital Wellbeing',
-      label: 'Open Digital Wellbeing ↗',
-      url: 'intent:#Intent;action=android.settings.DIGITAL_WELLBEING_SETTINGS;end',
-      hint: 'Settings → Digital Wellbeing → yesterday'
-    };
-  }
-  return {
-    name: 'Screen Time',
-    label: 'Open Screen Time ↗',
-    url: 'App-prefs:root=SCREEN_TIME',
-    hint: 'Settings → Screen Time → See All Activity'
-  };
-}
-window.openScreenTime = function() { window.location.href = getScreenTimeInfo().url; };
 
 // ── Track which challenges the user belongs to ─────────────────────
 const _origCreate = window.createChallenge;
