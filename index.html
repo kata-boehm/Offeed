@@ -347,6 +347,14 @@ select.input-field option { background: var(--paper); color: var(--ink); }
     </div>
   </div>
   <div class="body">
+    <div id="install-banner" style="display:none; background:var(--petrol-pale); border:1.5px solid var(--border-med); border-radius:var(--r-sm); padding:12px 14px; margin-bottom:16px; align-items:center; gap:10px;">
+      <div style="flex:1;">
+        <div style="font-size:13px; font-weight:700; color:var(--ink);">Add to home screen</div>
+        <div style="font-size:12px; color:var(--ink-2); margin-top:2px; font-weight:500;" id="install-banner-sub"></div>
+      </div>
+      <button id="install-action-btn" style="display:none; background:var(--petrol); border:none; border-radius:8px; padding:7px 13px; font-size:12px; color:#fff; cursor:pointer; font-family:'Nunito',sans-serif; font-weight:700; white-space:nowrap;" onclick="triggerInstall()">Install</button>
+      <button onclick="dismissInstallBanner()" style="background:none; border:none; cursor:pointer; font-size:20px; color:var(--ink-3); padding:0 4px; line-height:1; flex-shrink:0;">×</button>
+    </div>
     <div class="section-label">Your challenges</div>
     <div id="challenge-list"></div>
   </div>
@@ -625,6 +633,7 @@ function go(id) {
     else if (id === 's-account') document.getElementById('nav-account').classList.add('active');
   }
   // Screen-specific init
+  if (id === 's-home') maybeShowInstallBanner();
   if (id === 's-new') {
     const nd = document.getElementById('new-duration'); if (nd) nd.value = '7';
     ['new-goal-hours','new-goal-mins','new-name','new-stakes','new-dur-weeks'].forEach(i => { const el=document.getElementById(i); if(el) el.value=''; });
@@ -1261,6 +1270,56 @@ window.selectCheckinDay = function(idx) {
   const cm = document.getElementById('checkin-mins'); if (cm) cm.value = '';
 };
 
+
+// ── Install prompt ────────────────────────────────────────────────
+let deferredInstallPrompt = null;
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  maybeShowInstallBanner();
+});
+
+window.addEventListener('appinstalled', () => {
+  deferredInstallPrompt = null;
+  hideInstallBanner();
+});
+
+function isStandalone() {
+  return window.matchMedia('(display-mode: standalone)').matches || !!window.navigator.standalone;
+}
+function isIOS() {
+  return /iphone|ipad|ipod/i.test(navigator.userAgent) && !/(chrome|crios|fxios)/i.test(navigator.userAgent);
+}
+function maybeShowInstallBanner() {
+  if (isStandalone() || LS.get('install_dismissed')) return;
+  const banner = document.getElementById('install-banner');
+  if (!banner) return;
+  if (deferredInstallPrompt) {
+    document.getElementById('install-banner-sub').textContent = 'Install Offeed for quick access from your home screen.';
+    document.getElementById('install-action-btn').style.display = 'block';
+    banner.style.display = 'flex';
+  } else if (isIOS()) {
+    document.getElementById('install-banner-sub').textContent = 'Tap the Share button → Add to Home Screen.';
+    document.getElementById('install-action-btn').style.display = 'none';
+    banner.style.display = 'flex';
+  }
+}
+function hideInstallBanner() {
+  const banner = document.getElementById('install-banner');
+  if (banner) banner.style.display = 'none';
+}
+window.dismissInstallBanner = function() {
+  LS.set('install_dismissed', true);
+  hideInstallBanner();
+};
+window.triggerInstall = async function() {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  const { outcome } = await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  if (outcome === 'accepted') hideInstallBanner();
+};
 
 // ── Track which challenges the user belongs to ─────────────────────
 const _origCreate = window.createChallenge;
