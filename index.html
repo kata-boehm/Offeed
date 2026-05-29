@@ -1252,11 +1252,11 @@ window.selectCheckinDay = function(idx) {
   document.getElementById('day-btn-0')?.classList.toggle('active', idx===0);
   document.getElementById('day-btn-1')?.classList.toggle('active', idx===1);
   const lbl = getDayLabel(state.checkinDate);
-  const title = document.getElementById('checkin-title'); if (title) title.textContent = lbl.charAt(0).toUpperCase()+lbl.slice(1)+"'s check-in";
+  const title = document.getElementById('checkin-title'); if (title) title.textContent = lbl==='2 days ago'?'Check-in — 2 days ago':lbl.charAt(0).toUpperCase()+lbl.slice(1)+"'s check-in";
   const dayLbl = document.getElementById('checkin-day-label'); if (dayLbl) dayLbl.textContent = lbl;
   const inputLbl = document.getElementById('checkin-input-label'); if (inputLbl) inputLbl.textContent = 'Time on social media '+lbl;
+  const hint = document.getElementById('checkin-hint'); if (hint) hint.textContent = getCheckinHint(lbl);
   const cfb = document.getElementById('checkin-feedback'); if (cfb) cfb.textContent = '';
-  const rp = document.getElementById('rank-preview'); if (rp) rp.innerHTML = '<span style="font-size:13px;color:var(--text-3);font-weight:500;">Enter minutes above</span>';
   const ch = document.getElementById('checkin-hours'); if (ch) ch.value = '';
   const cm = document.getElementById('checkin-mins'); if (cm) cm.value = '';
 };
