@@ -412,8 +412,10 @@ select.input-field option { background: var(--paper); color: var(--ink); }
         <button type="button" class="dur-btn" id="day-btn-1" onclick="selectCheckinDay(1)" style="flex:1;">—</button>
       </div>
     </div>
-    <div style="font-size:14px; color:var(--ink-2); margin-bottom:12px; line-height:1.7; font-weight:500;">How many minutes on social media <span id="checkin-day-label" style="color:var(--ink); font-weight:700;">yesterday</span>?</div>
-    <button class="btn btn-ghost" onclick="openScreenTime()" id="open-screen-time-btn" style="margin-bottom:20px; font-size:13px; padding:10px 16px; justify-content:center;">Open Screen Time ↗</button>
+    <div style="display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:16px;">
+      <div style="font-size:14px; color:var(--ink-2); line-height:1.7; font-weight:500;">How many minutes on social media <span id="checkin-day-label" style="color:var(--ink); font-weight:700;">yesterday</span>?</div>
+      <button onclick="openScreenTime()" id="open-screen-time-btn" style="background:none; border:none; cursor:pointer; font-size:12px; color:var(--petrol); font-weight:700; white-space:nowrap; padding:0; flex-shrink:0; text-decoration:underline; text-underline-offset:2px;">Open ↗</button>
+    </div>
     <div class="input-label" id="checkin-input-label">Time on social media yesterday</div>
     <div style="display:flex; gap:12px; margin-bottom:16px;">
       <div class="big-input-wrap" style="flex:1; margin-bottom:0;">
@@ -425,13 +427,8 @@ select.input-field option { background: var(--paper); color: var(--ink); }
         <span class="big-unit">min</span>
       </div>
     </div>
-    <div id="checkin-feedback" style="font-size:14px; min-height:44px; margin-bottom:20px; line-height:1.7; color:var(--ink-2); transition:color 0.2s; font-weight:600;"></div>
-    <div class="divider"></div>
-    <div style="font-size:10px; color:var(--ink-3); font-family:'JetBrains Mono',monospace; letter-spacing:0.08em; margin:16px 0 10px; text-transform:uppercase;">Rank preview</div>
-    <div class="card" id="rank-preview" style="padding:14px 18px;">
-      <span style="font-size:13px; color:var(--ink-3); font-weight:500;">Enter minutes above</span>
-    </div>
-    <button class="btn btn-primary" style="margin-top:20px;" id="submit-btn" onclick="submitCheckin()">Submit</button>
+    <div id="checkin-feedback" style="font-size:14px; min-height:24px; margin-bottom:20px; line-height:1.7; color:var(--ink-2); transition:color 0.2s; font-weight:600;"></div>
+    <button class="btn btn-primary" id="submit-btn" onclick="submitCheckin()">Submit</button>
     <button class="btn btn-ghost" onclick="go('s-detail')">Cancel</button>
   </div>
 </div>
@@ -670,7 +667,6 @@ function go(id) {
     const dayLbl = document.getElementById('checkin-day-label'); if (dayLbl) dayLbl.textContent = lbl;
     const inputLbl = document.getElementById('checkin-input-label'); if (inputLbl) inputLbl.textContent = 'Time on social media '+lbl;
     const cfb = document.getElementById('checkin-feedback'); if (cfb) cfb.textContent = '';
-    const rp = document.getElementById('rank-preview'); if (rp) rp.innerHTML = '<span style="font-size:13px;color:var(--text-3);font-weight:500;">Enter minutes above</span>';
     const ch = document.getElementById('checkin-hours'); if (ch) ch.value = '';
     const cm = document.getElementById('checkin-mins'); if (cm) cm.value = '';
   }
@@ -1015,10 +1011,7 @@ window.updateCheckinFeedback = function() {
   const hoursEl = document.getElementById('checkin-hours');
   const minsEl = document.getElementById('checkin-mins');
   const feedback = document.getElementById('checkin-feedback');
-  const preview = document.getElementById('rank-preview');
-  if (hoursEl.value === '' && minsEl.value === '') {
-    feedback.textContent=''; preview.innerHTML='<span style="font-size:13px;color:var(--text-3);font-weight:500;">Enter your time above</span>'; return;
-  }
+  if (hoursEl.value === '' && minsEl.value === '') { feedback.textContent=''; return; }
   const val = (parseInt(hoursEl.value) || 0) * 60 + (parseInt(minsEl.value) || 0);
   const me = c.members.find(m => m.name === state.me.name);
   let msg='', color='var(--text-2)';
@@ -1038,11 +1031,6 @@ window.updateCheckinFeedback = function() {
     else { msg='🚨 Heavy day. The stakes are looking real...'; color='var(--warn)'; }
   }
   feedback.style.color=color; feedback.textContent=msg;
-
-  const simSorted = [...c.members].map(m=>m.name===state.me.name?{...m,_t:totalMinutes(m)+val}:{...m,_t:totalMinutes(m)}).sort((a,b)=>a._t-b._t);
-  const rank = simSorted.findIndex(m=>m.name===state.me.name)+1;
-  const simMe = simSorted.find(m=>m.name===state.me.name);
-  preview.innerHTML = `<div style="display:flex;align-items:center;gap:10px;"><div class="lb-avatar av-accent">${state.me.initials}</div><div><div style="font-size:14px;font-weight:700;color:var(--text-1);">${state.me.name} · ${rank}${rankSuffix(rank)} place</div><div style="font-size:11px;color:var(--text-3);font-family:'JetBrains Mono',monospace;">${simMe._t}m total</div></div></div>`;
 };
 
 window.submitCheckin = async function() {
