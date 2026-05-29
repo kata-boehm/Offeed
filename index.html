@@ -385,7 +385,7 @@ select.input-field option { background: var(--paper); color: var(--ink); }
     <button class="back-btn" onclick="go('s-detail')">&#8592;</button>
     <div style="flex:1; min-width:0;">
       <div style="font-size:10px; color:rgba(255,255,255,0.5); font-weight:700; letter-spacing:0.06em;">OFFEED</div>
-      <h1>Yesterday's check-in</h1>
+      <h1 id="checkin-title">Yesterday's check-in</h1>
     </div>
   </div>
   <div class="body">
@@ -405,9 +405,16 @@ select.input-field option { background: var(--paper); color: var(--ink); }
       <div id="checkin-baseline-error" style="font-size:12px; color:var(--red); font-weight:600; min-height:16px; margin-bottom:16px;"></div>
       <div class="divider" style="margin-bottom:20px;"></div>
     </div>
-    <div style="font-size:14px; color:var(--ink-2); margin-bottom:6px; line-height:1.7; font-weight:500;">How many minutes on social media <span style="color:var(--ink); font-weight:700;">yesterday</span>?</div>
-    <div style="font-size:12px; color:var(--ink-3); margin-bottom:24px; font-family:'JetBrains Mono',monospace; line-height:1.9;">iOS: Screen Time → yesterday.<br>Android: Digital Wellbeing → yesterday.</div>
-    <div class="input-label">Time on social media yesterday</div>
+    <div id="checkin-day-selector" style="display:none; margin-bottom:20px;">
+      <div class="input-label">Which day?</div>
+      <div style="display:flex; gap:8px;">
+        <button type="button" class="dur-btn active" id="day-btn-0" onclick="selectCheckinDay(0)" style="flex:1;">Yesterday</button>
+        <button type="button" class="dur-btn" id="day-btn-1" onclick="selectCheckinDay(1)" style="flex:1;">—</button>
+      </div>
+    </div>
+    <div style="font-size:14px; color:var(--ink-2); margin-bottom:12px; line-height:1.7; font-weight:500;">How many minutes on social media <span id="checkin-day-label" style="color:var(--ink); font-weight:700;">yesterday</span>?</div>
+    <button class="btn btn-ghost" onclick="openScreenTime()" id="open-screen-time-btn" style="margin-bottom:20px; font-size:13px; padding:10px 16px; justify-content:center;">Open Screen Time ↗</button>
+    <div class="input-label" id="checkin-input-label">Time on social media yesterday</div>
     <div style="display:flex; gap:12px; margin-bottom:16px;">
       <div class="big-input-wrap" style="flex:1; margin-bottom:0;">
         <input class="big-input" type="number" id="checkin-hours" min="0" max="24" placeholder="0" oninput="if(+this.value>24)this.value=24; if(+this.value<0)this.value=0; updateCheckinFeedback()">
@@ -543,6 +550,15 @@ select.input-field option { background: var(--paper); color: var(--ink); }
       </label>
     </div>
     <div id="notif-msg" style="font-size:12px; color:var(--ink-3); font-weight:500; min-height:18px; padding:0 2px;"></div>
+
+    <div class="section-label" style="margin-top:28px;">Screen time</div>
+    <div class="card" style="display:flex; align-items:center; gap:14px;">
+      <div style="flex:1;">
+        <div style="font-size:14px; font-weight:700; color:var(--ink);" id="screen-time-settings-name">Screen Time</div>
+        <div style="font-size:12px; color:var(--ink-3); margin-top:2px; font-weight:500;" id="screen-time-settings-hint">Jump to your phone's screen time stats</div>
+      </div>
+      <button class="btn btn-ghost" onclick="openScreenTime()" style="width:auto; padding:8px 14px; font-size:13px; flex-shrink:0; margin-top:0;">Open ↗</button>
+    </div>
   </div>
 </div>
 
@@ -586,6 +602,17 @@ const LS = { get: k => { try { return JSON.parse(localStorage.getItem(k)); } cat
 function makeId() { return Math.random().toString(36).slice(2,8).toUpperCase(); }
 function getToday() { return new Date().toISOString().slice(0,10); }
 function getYesterday() { const d=new Date(); d.setDate(d.getDate()-1); return d.toISOString().slice(0,10); }
+function getDayBefore() { const d=new Date(); d.setDate(d.getDate()-2); return d.toISOString().slice(0,10); }
+function getDayLabel(dateStr) {
+  const names=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const diff=Math.round((new Date(getToday()+'T12:00:00')-new Date(dateStr+'T12:00:00'))/86400000);
+  if(diff===1) return 'yesterday'; if(diff===2) return 'the day before';
+  return names[new Date(dateStr+'T12:00:00').getDay()].toLowerCase();
+}
+function getUnloggedDays(member, c) {
+  const ch=member?.checkins||{}, start=c?.startDate||'', end=c?.endDate||'';
+  return [getYesterday(),getDayBefore()].filter(d=>(!start||d>=start)&&(!end||d<=end)&&!ch[d]);
+}
 function initials(name) { return name.trim().split(/\s+/).map(w=>w[0]).join('').toUpperCase().slice(0,2); }
 function totalMinutes(member) { return Object.values(member.checkins||{}).reduce((s,v)=>s+v,0); }
 function daysLeft(c) { return Math.max(0, Math.ceil((new Date(c.endDate)-new Date())/864e5)); }
@@ -624,6 +651,28 @@ function go(id) {
     const bErr = document.getElementById('checkin-baseline-error'); if (bErr) bErr.textContent = '';
     const bh = document.getElementById('checkin-baseline-hours'); if (bh) bh.value = '';
     const bm = document.getElementById('checkin-baseline-mins'); if (bm) bm.value = '';
+    const stBtn = document.getElementById('open-screen-time-btn'); if (stBtn) stBtn.textContent = getScreenTimeInfo().label;
+    // Day selector
+    const unlogged = getUnloggedDays(me, c);
+    state.checkinDate = unlogged[0] || getYesterday();
+    const selector = document.getElementById('checkin-day-selector');
+    if (selector) {
+      selector.style.display = unlogged.length > 1 ? 'block' : 'none';
+      if (unlogged.length > 1) {
+        const btn1 = document.getElementById('day-btn-1');
+        if (btn1) btn1.textContent = getDayLabel(unlogged[1]).replace(/^\w/, c => c.toUpperCase());
+        document.getElementById('day-btn-0')?.classList.add('active');
+        document.getElementById('day-btn-1')?.classList.remove('active');
+      }
+    }
+    const lbl = getDayLabel(state.checkinDate);
+    const title = document.getElementById('checkin-title'); if (title) title.textContent = lbl.charAt(0).toUpperCase()+lbl.slice(1)+"'s check-in";
+    const dayLbl = document.getElementById('checkin-day-label'); if (dayLbl) dayLbl.textContent = lbl;
+    const inputLbl = document.getElementById('checkin-input-label'); if (inputLbl) inputLbl.textContent = 'Time on social media '+lbl;
+    const cfb = document.getElementById('checkin-feedback'); if (cfb) cfb.textContent = '';
+    const rp = document.getElementById('rank-preview'); if (rp) rp.innerHTML = '<span style="font-size:13px;color:var(--text-3);font-weight:500;">Enter minutes above</span>';
+    const ch = document.getElementById('checkin-hours'); if (ch) ch.value = '';
+    const cm = document.getElementById('checkin-mins'); if (cm) cm.value = '';
   }
   if (id === 's-account') {
     const pn = document.getElementById('profile-name'); if (pn) pn.value = window.state?.me?.name || '';
@@ -631,6 +680,9 @@ function go(id) {
     const sb = document.getElementById('save-profile-btn'); if (sb) sb.disabled = true;
     const nt = document.getElementById('notif-toggle'); if (nt) nt.checked = !!(localStorage.getItem('notif_enabled') && Notification.permission === 'granted');
     const nm = document.getElementById('notif-msg'); if (nm) nm.textContent = '';
+    const stInfo = getScreenTimeInfo();
+    const stn = document.getElementById('screen-time-settings-name'); if (stn) stn.textContent = stInfo.name;
+    const sth = document.getElementById('screen-time-settings-hint'); if (sth) sth.textContent = stInfo.hint;
   }
 }
 window.go = go;
@@ -638,7 +690,7 @@ function showLoading(v) { document.getElementById('loading').style.display = v ?
 function setErr(id, msg) { document.getElementById(id).textContent = msg||''; }
 
 // ── App state (lightweight, persisted locally) ─────────────────────
-window.state = { me: null, activeChallengeId: null, createdChallengeId: null, challengeCache: {} };
+window.state = { me: null, activeChallengeId: null, createdChallengeId: null, challengeCache: {}, checkinDate: null };
 function loadLocalState() { const s=LS.get('sl_v2'); if(s) Object.assign(window.state, s); }
 function saveLocalState() { LS.set('sl_v2', { me: state.me, activeChallengeId: state.activeChallengeId, createdChallengeId: state.createdChallengeId }); }
 
@@ -939,13 +991,21 @@ function renderDetail(c) {
   }).join('');
 
   const btn = document.getElementById('detail-checkin-btn');
-  const done = me && checkedInForYesterday(me);
   if (isOver) {
     btn.textContent = 'Challenge over';
     btn.disabled = true;
   } else {
-    btn.textContent = done ? '✓ Yesterday already logged' : 'Log yesterday\'s screen time';
-    btn.disabled = !!done;
+    const unlogged = getUnloggedDays(me, c);
+    if (unlogged.length === 0) {
+      btn.textContent = '✓ All caught up';
+      btn.disabled = true;
+    } else if (unlogged.length > 1) {
+      btn.textContent = 'Log 2 missed days';
+      btn.disabled = false;
+    } else {
+      btn.textContent = "Log yesterday's screen time";
+      btn.disabled = false;
+    }
   }
 }
 
@@ -1011,7 +1071,7 @@ window.submitCheckin = async function() {
 
   const memberIdx = c.members.findIndex(m=>m.name===state.me.name);
   if (!c.members[memberIdx].checkins) c.members[memberIdx].checkins={};
-  c.members[memberIdx].checkins[getYesterday()] = val;
+  c.members[memberIdx].checkins[state.checkinDate || getYesterday()] = val;
   if (needsBaseline && baseline) c.members[memberIdx].baselineMinutes = baseline;
 
   await saveChallenge(c);
@@ -1029,11 +1089,17 @@ window.submitCheckin = async function() {
 function buildWeekBars(c) {
   const me = c.members.find(m=>m.name===state.me.name);
   const dayLabels=['M','T','W','T','F','S','S'];
-  const today=new Date(); const todayDow=(today.getDay()+6)%7;
-  const vals=dayLabels.map((_,i)=>{ const d=new Date(today); d.setDate(d.getDate()-(todayDow-i)); return me.checkins?.[d.toISOString().slice(0,10)]??null; });
+  const today=new Date(); const todayStr=getToday(); const todayDow=(today.getDay()+6)%7;
+  const dates=dayLabels.map((_,i)=>{ const d=new Date(today); d.setDate(d.getDate()-(todayDow-i)); return d.toISOString().slice(0,10); });
+  const vals=dates.map(d=>me.checkins?.[d]??null);
   const maxV=Math.max(...vals.filter(v=>v!==null),1);
   document.getElementById('week-bars-sub').innerHTML=vals.map((v,i)=>{
-    if(v===null) return `<div class="week-bar" style="flex:1;background:var(--petrol-pale);height:20%;"></div>`;
+    const d=dates[i];
+    const isPast=d<todayStr, inChallenge=d>=c.startDate&&d<=c.endDate;
+    if(v===null) {
+      if(isPast&&inChallenge) return `<div class="week-bar" style="flex:1;height:20%;border:2px dashed var(--border-med);border-radius:4px 4px 0 0;box-sizing:border-box;opacity:0.7;"></div>`;
+      return `<div class="week-bar" style="flex:1;background:var(--petrol-pale);height:20%;opacity:0.35;"></div>`;
+    }
     const h=Math.max(12,Math.round(v/maxV*100));
     return `<div class="week-bar" style="flex:1;background:${i===todayDow?'var(--accent)':'var(--navy-500)'};height:${h}%;"></div>`;
   }).join('');
@@ -1195,6 +1261,43 @@ window.shareInviteCreated = function() {
   const btn=document.getElementById('created-share-btn');
   btn.textContent='Copied!'; setTimeout(()=>btn.textContent='Share invite 📋',2000);
 };
+
+// ── Check-in day selector ─────────────────────────────────────────
+window.selectCheckinDay = function(idx) {
+  const c = state.challengeCache;
+  const me = c?.members?.find(m => m.name === state.me?.name);
+  const unlogged = getUnloggedDays(me, c);
+  state.checkinDate = unlogged[idx];
+  document.getElementById('day-btn-0')?.classList.toggle('active', idx===0);
+  document.getElementById('day-btn-1')?.classList.toggle('active', idx===1);
+  const lbl = getDayLabel(state.checkinDate);
+  const title = document.getElementById('checkin-title'); if (title) title.textContent = lbl.charAt(0).toUpperCase()+lbl.slice(1)+"'s check-in";
+  const dayLbl = document.getElementById('checkin-day-label'); if (dayLbl) dayLbl.textContent = lbl;
+  const inputLbl = document.getElementById('checkin-input-label'); if (inputLbl) inputLbl.textContent = 'Time on social media '+lbl;
+  const cfb = document.getElementById('checkin-feedback'); if (cfb) cfb.textContent = '';
+  const rp = document.getElementById('rank-preview'); if (rp) rp.innerHTML = '<span style="font-size:13px;color:var(--text-3);font-weight:500;">Enter minutes above</span>';
+  const ch = document.getElementById('checkin-hours'); if (ch) ch.value = '';
+  const cm = document.getElementById('checkin-mins'); if (cm) cm.value = '';
+};
+
+// ── Screen time deep link ──────────────────────────────────────────
+function getScreenTimeInfo() {
+  if (/android/i.test(navigator.userAgent)) {
+    return {
+      name: 'Digital Wellbeing',
+      label: 'Open Digital Wellbeing ↗',
+      url: 'intent:#Intent;action=android.settings.DIGITAL_WELLBEING_SETTINGS;end',
+      hint: 'Settings → Digital Wellbeing → yesterday'
+    };
+  }
+  return {
+    name: 'Screen Time',
+    label: 'Open Screen Time ↗',
+    url: 'App-prefs:root=SCREEN_TIME',
+    hint: 'Settings → Screen Time → See All Activity'
+  };
+}
+window.openScreenTime = function() { window.location.href = getScreenTimeInfo().url; };
 
 // ── Track which challenges the user belongs to ─────────────────────
 const _origCreate = window.createChallenge;
