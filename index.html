@@ -607,8 +607,8 @@ function getDayLabel(dateStr) {
   return names[new Date(dateStr+'T12:00:00').getDay()].toLowerCase();
 }
 function getUnloggedDays(member, c) {
-  const ch=member?.checkins||{}, start=c?.startDate||'', end=c?.endDate||'';
-  return [getYesterday(),getDayBefore()].filter(d=>(!start||d>=start)&&(!end||d<=end)&&!ch[d]);
+  const ch=member?.checkins||{};
+  return [getYesterday(),getDayBefore()].filter(d=>!ch[d]);
 }
 function initials(name) { return name.trim().split(/\s+/).map(w=>w[0]).join('').toUpperCase().slice(0,2); }
 function totalMinutes(member) { return Object.values(member.checkins||{}).reduce((s,v)=>s+v,0); }
