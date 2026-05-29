@@ -596,10 +596,10 @@ function getDayLabel(dateStr) {
   if(diff===1) return 'yesterday'; if(diff===2) return '2 days ago';
   return names[new Date(dateStr+'T12:00:00').getDay()].toLowerCase();
 }
-function getCheckinHint(dayLabel) {
+function getCheckinHint() {
   return /android/i.test(navigator.userAgent)
-    ? `Settings → Digital Wellbeing → ${dayLabel}`
-    : `Settings → Screen Time → ${dayLabel}`;
+    ? 'Go to Settings → Digital Wellbeing'
+    : 'Go to Settings → Screen Time';
 }
 function getUnloggedDays(member, c) {
   const ch=member?.checkins||{};
@@ -660,7 +660,7 @@ function go(id) {
     const title = document.getElementById('checkin-title'); if (title) title.textContent = lbl==='2 days ago'?'Check-in — 2 days ago':lbl.charAt(0).toUpperCase()+lbl.slice(1)+"'s check-in";
     const dayLbl = document.getElementById('checkin-day-label'); if (dayLbl) dayLbl.textContent = lbl;
     const inputLbl = document.getElementById('checkin-input-label'); if (inputLbl) inputLbl.textContent = 'Time on social media '+lbl;
-    const hint = document.getElementById('checkin-hint'); if (hint) hint.textContent = getCheckinHint(lbl);
+    const hint = document.getElementById('checkin-hint'); if (hint) hint.textContent = getCheckinHint();
     const cfb = document.getElementById('checkin-feedback'); if (cfb) cfb.textContent = '';
     const ch = document.getElementById('checkin-hours'); if (ch) ch.value = '';
     const cm = document.getElementById('checkin-mins'); if (cm) cm.value = '';
