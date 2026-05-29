@@ -412,7 +412,8 @@ select.input-field option { background: var(--paper); color: var(--ink); }
         <button type="button" class="dur-btn" id="day-btn-1" onclick="selectCheckinDay(1)" style="flex:1;">—</button>
       </div>
     </div>
-    <div style="font-size:14px; color:var(--ink-2); margin-bottom:16px; line-height:1.7; font-weight:500;">How many minutes on social media <span id="checkin-day-label" style="color:var(--ink); font-weight:700;">yesterday</span>?</div>
+    <div style="font-size:14px; color:var(--ink-2); margin-bottom:6px; line-height:1.7; font-weight:500;">How many minutes on social media <span id="checkin-day-label" style="color:var(--ink); font-weight:700;">yesterday</span>?</div>
+    <div id="checkin-hint" style="font-size:12px; color:var(--ink-3); font-family:'JetBrains Mono',monospace; margin-bottom:20px;"></div>
     <div class="input-label" id="checkin-input-label">Time on social media yesterday</div>
     <div style="display:flex; gap:12px; margin-bottom:16px;">
       <div class="big-input-wrap" style="flex:1; margin-bottom:0;">
@@ -595,6 +596,11 @@ function getDayLabel(dateStr) {
   if(diff===1) return 'yesterday'; if(diff===2) return '2 days ago';
   return names[new Date(dateStr+'T12:00:00').getDay()].toLowerCase();
 }
+function getCheckinHint(dayLabel) {
+  return /android/i.test(navigator.userAgent)
+    ? `Settings → Digital Wellbeing → ${dayLabel}`
+    : `Settings → Screen Time → ${dayLabel}`;
+}
 function getUnloggedDays(member, c) {
   const ch=member?.checkins||{};
   return [getYesterday(),getDayBefore()].filter(d=>!ch[d]);
@@ -654,6 +660,7 @@ function go(id) {
     const title = document.getElementById('checkin-title'); if (title) title.textContent = lbl==='2 days ago'?'Check-in — 2 days ago':lbl.charAt(0).toUpperCase()+lbl.slice(1)+"'s check-in";
     const dayLbl = document.getElementById('checkin-day-label'); if (dayLbl) dayLbl.textContent = lbl;
     const inputLbl = document.getElementById('checkin-input-label'); if (inputLbl) inputLbl.textContent = 'Time on social media '+lbl;
+    const hint = document.getElementById('checkin-hint'); if (hint) hint.textContent = getCheckinHint(lbl);
     const cfb = document.getElementById('checkin-feedback'); if (cfb) cfb.textContent = '';
     const ch = document.getElementById('checkin-hours'); if (ch) ch.value = '';
     const cm = document.getElementById('checkin-mins'); if (cm) cm.value = '';
