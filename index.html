@@ -554,6 +554,8 @@ select.input-field option { background: var(--paper); color: var(--ink); }
     </div>
     <div id="notif-msg" style="font-size:12px; color:var(--ink-3); font-weight:500; min-height:18px; padding:0 2px;"></div>
 
+    <div class="divider" style="margin-top:32px;"></div>
+    <button class="btn btn-ghost" onclick="deleteAccount()" style="margin-top:12px; color:var(--red); border-color:rgba(224,92,92,0.3);">Delete account</button>
   </div>
 </div>
 
@@ -1210,6 +1212,22 @@ window.saveProfile = async function() {
   loadMyChallenges();
   go('s-account');
   showToast('New name suits you! ✨');
+};
+
+window.deleteAccount = async function() {
+  if (!confirm('Delete your account? You will be removed from all challenges and your data will be wiped.')) return;
+  const name = state.me?.name;
+  const ids = LS.get('sl_my_challenges_' + name) || [];
+  for (const id of ids) {
+    const c = await fetchChallenge(id);
+    if (!c) continue;
+    c.members = c.members.filter(m => m.name !== name);
+    await saveChallenge(c);
+  }
+  localStorage.clear();
+  window.state = { me: null, activeChallengeId: null, createdChallengeId: null, challengeCache: {}, checkinDate: null };
+  document.getElementById('global-nav').style.display = 'none';
+  go('s-onboard');
 };
 
 window.leaveChallenge = async function() {
