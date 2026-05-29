@@ -598,8 +598,8 @@ function getDayLabel(dateStr) {
 }
 function getCheckinHint() {
   return /android/i.test(navigator.userAgent)
-    ? 'Go to Settings → Digital Wellbeing'
-    : 'Go to Settings → Screen Time';
+    ? 'Go to your phone\'s Settings → Digital Wellbeing'
+    : 'Go to your phone\'s Settings → Screen Time';
 }
 function getUnloggedDays(member, c) {
   const ch=member?.checkins||{};
