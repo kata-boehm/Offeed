@@ -832,7 +832,7 @@ async function loadMyChallenges() {
     const sorted = [...c.members].sort((a,b)=>totalMinutes(a)-totalMinutes(b));
     const rank = sorted.findIndex(m=>m.name===state.me.name)+1;
     const dl = daysLeft(c);
-    const done = me&&checkedInForYesterday(me);
+    const unlogged = getUnloggedDays(me, c);
     const over = getToday() > c.endDate;
     const pillCls = rank===1?'pill-gold':rank===c.members.length&&c.members.length>1?'pill-warn':'pill-muted';
     return `<div class="challenge-list-item" onclick="openChallenge('${c.id}')">
@@ -842,7 +842,7 @@ async function loadMyChallenges() {
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;">
         <span class="pill ${over ? 'pill-muted' : pillCls}">${over ? '🏆 '+sorted[0].name : rank+rankSuffix(rank)}</span>
-        ${over ? '' : `<span style="font-size:10px;color:${done?'var(--accent)':'var(--text-3)'};font-family:'JetBrains Mono',monospace;">${done?'✓ logged':'· log yesterday'}</span>`}
+        ${over ? '' : `<span style="font-size:10px;color:${unlogged.length===0?'var(--accent)':'var(--text-3)'};font-family:'JetBrains Mono',monospace;">${unlogged.length===0?'✓ logged':unlogged.length>1?'· 2 days missing':'· log '+getDayLabel(unlogged[0])}</span>`}
       </div>
     </div>`;
   }).join('');
@@ -984,7 +984,8 @@ function renderDetail(c) {
       btn.textContent = 'Log 2 missed days';
       btn.disabled = false;
     } else {
-      btn.textContent = "Log yesterday's screen time";
+      const dl = getDayLabel(unlogged[0]);
+      btn.textContent = dl === 'yesterday' ? "Log yesterday's screen time" : `Log screen time — ${dl}`;
       btn.disabled = false;
     }
   }
